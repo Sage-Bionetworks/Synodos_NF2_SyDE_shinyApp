@@ -7,12 +7,13 @@ library("reshape2")
 library("scales")
 library("gdata")
 library("dplyr")
+library("devtools")
+
 synapseLogin()
 
 
-
-#load the heatmap code
-source("heatmap_code.R")
+#source the heatmap code
+source_url("https://raw.githubusercontent.com/apratap/apRs/master/expression_heatmap.R")
 
 #loding the global data for publicData 
 source("global_publicData.R")
@@ -27,15 +28,3 @@ get_synodos_banner <- function(...){
   img(src="synodos-banner.jpg",...)
 }
 
- 
-# library("org.Hs.eg.db")
-# columns(org.Hs.eg.db)
-# k <- keys(org.Hs.eg.db,keytype="SYMBOL")
-# 
-# 
-# hg19_gene_annot <- select(org.Hs.eg.db, keys=k, columns=c("GENENAME","ALIAS", "CHR", "CHRLOC"), keytype="SYMBOL")
-# head(hg19_gene_annot)
-# x <- hg19_gene_annot %>%
-#   group_by(SYMBOL, GENENAME, CHR, CHRLOC) %>%
-#   summarise(paste(ALIAS, collapse=', ')) %>%
-#   head(5)

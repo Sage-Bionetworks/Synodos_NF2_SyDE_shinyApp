@@ -39,17 +39,14 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                       selectInput('pubData_selectedPhenotypes', NULL, 
                                                   choices = '',
                                                   selectize=T, multiple=T)
-                     ),
-                     br(), br(), br(), br(), br(), br(),
-                     get_synodos_banner(width="300")
+                     )
                    ),
                    
                    mainPanel(
                      tabsetPanel(id="pubData_pathway_panel", type="tabs",
                                  tabPanel("Pathway Enrichment",
-                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL),
-                                          verbatimTextOutput('pubData_nselectedStudies')
-                                 ),
+                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL)
+                                          ),
                                  tabPanel("Expression",
                                           plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)
                                           #verbatimTextOutput('pubData_nselectedStudies')
@@ -64,13 +61,13 @@ shinyUI( navbarPage("Synodos Data Explorer",
         # Panel 2: Kinome Screens
         tabPanel("Kinome Screens",
                  h3("Synodos Kinome Screens"),
-              sidebarPanel(
+                 sidebarPanel(
                    h4('1. Select Samples'),
-                   selectInput('kinome_selected_samples', NULL, choices = c('ALL', as.character(unique(kinomeData$sample))),
-                                selected = as.character(unique(kinomeData$sample))[1:2], selectize=T, multiple=T),
+                   selectInput('kinome_selected_samples', NULL, choices=unique(kinomeData$condition),
+                                selected = unique(kinomeData$condition)[1], selectize=T, multiple=T),
                    br(),br(),
                    h4('Filter By:'),
-                   br(), br(),
+                   br(),
                    
                    h4('2. Select Kinase Family'),
                    selectInput('kinome_selected_kinaseFamily', NULL, choices = c('ALL',unique(kinomeData$Family)),
@@ -79,42 +76,45 @@ shinyUI( navbarPage("Synodos Data Explorer",
                  ),
                  mainPanel(
                    column(3,showOutput("kinome_barPlot", "nvd3"))
-                  # column(6,showOutput("kinome_barPlot", "nvd3"))
+                 )
+        ),
+        #DrugScreen Panel
+        tabPanel('Drug Screens',
+                 sidebarPanel(
+                  h5('test') 
                    
-#                    tabsetPanel(id="kinome_mainPanel", type="tabs",
-#                                tabPanel("Explore Data",
-#                                         column(10,
-#                                                 showOutput("kinome_barPlot", "nvd3")
-#                                         )   
-#                                ),
-#                                tabPanel("Download Data"
-#                                       
-#                                )
                    
-                )
-          ),  
+                   
+                 ),
+                 mainPanel(
+                  h5('test') 
+                 )
+        ),
+  
         
          # Testing Panel
-        tabPanel("testing",
-                    sidebarPanel(
-                      selectInput(inputId = "x",
-                                  label = "Choose X",
-                                  choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
-                                  selected = "SepalLength"),
-                      selectInput(inputId = "y",
-                                  label = "Choose Y",
-                                  choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
-                                  selected = "SepalWidth")
-                    ),
-                    mainPanel(
-                      showOutput("myChart", "polycharts"),
-                      showOutput("chart1", "polycharts")
-                    )
-        ),   
+#         tabPanel("testing",
+#                     sidebarPanel(
+#                       selectInput(inputId = "x",
+#                                   label = "Choose X",
+#                                   choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
+#                                   selected = "SepalLength"),
+#                       selectInput(inputId = "y",
+#                                   label = "Choose Y",
+#                                   choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
+#                                   selected = "SepalWidth")
+#                     ),
+#                     mainPanel(
+#                       showOutput("myChart", "polycharts"),
+#                       showOutput("chart1", "polycharts")
+#                     )
+     
     #navbar pages option      
     fluid = T,
     responsive = T,
-    collapsable = T
+    collapsable = T,
+    footer = list(img(src="synodos-banner.jpg", height="150", width="180"))
+   
     )
 )
 

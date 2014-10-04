@@ -100,7 +100,6 @@ shinyServer(function(input, output, session) {
   
   
   pubData_filteredAnnotation <- reactive({
-    
     annotation <- publicData_phenotype[,c('studyId', 'sampleId')]
     annotation['studyType'] = 'meningioma'
     annotation$studyType[annotation$studyId %in% get_schwannoma_studies()] = 'schwannoma'
@@ -136,8 +135,10 @@ shinyServer(function(input, output, session) {
     withProgress(session, {
                             setProgress(message = "clustering & rendering heatmap, please wait", 
                                         detail = "This may take a few moments...")
-                            matrix_heatMap(scaled_mat, pubData_filteredAnnotation(),
-                                           fontsize_col=0,fontsize_row=fontsize_row)
+                            expHeatMap(scaled_mat, pubData_filteredAnnotation(),
+                                       scale=F,
+                                       fontsize_col=0,
+                                       fontsize_row=fontsize_row)
     })
   })
   
@@ -151,8 +152,11 @@ shinyServer(function(input, output, session) {
     withProgress(session, {
       setProgress(message = "clustering & rendering heatmap, please wait", 
                   detail = "This may take a few moments...")
-      matrix_heatMap(scaled_expmat, pubData_filteredAnnotation(),
-                     fontsize_col=0,fontsize_row=fontsize_row)
+      expHeatMap(scaled_expmat, 
+                 pubData_filteredAnnotation(),
+                 scale = F,
+                 fontsize_col=0,
+                 fontsize_row=fontsize_row)
     })
   })
   
@@ -175,7 +179,7 @@ shinyServer(function(input, output, session) {
   ## Kinome Screen Section
   ###############################
   output$kinome_barPlot <- renderChart({
-    p <- nPlot(log2_ratio ~ Uniprot , data=get_ordered_kinomeData(), group="sample", 
+    p <- nPlot(log2_ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
                type="multiBarChart")
     p$params$width <- 1000
     p$params$height <- 600
@@ -194,41 +198,30 @@ shinyServer(function(input, output, session) {
     missing_data
   })
   
-  
-   get_filtered_kinomeData <- reactive({
+  get_filtered_kinomeData <- reactive({
      cleaned_data <- get_cleaned_kinomeData()
-        
      #filter kinase family
      if( sum(input$kinome_selected_kinaseFamily %in% c('ALL')) != 1 ){
        cleaned_data <- filter(cleaned_data, Family %in% input$kinome_selected_kinaseFamily )        
      }
      #filter by samples
-     if( sum(input$kinome_selected_samples %in% c('ALL')) != 1 ){
-       cleaned_data <- filter(cleaned_data, sample %in% input$kinome_selected_samples )        
-     }
+     cleaned_data <- filter(cleaned_data, condition %in% input$kinome_selected_samples )        
      cleaned_data
    })
 
-
   get_ordered_kinomeData <- reactive({
-    data <- get_filtered_kinomeData()
-    
-    #get the sum of ratios per gene across all the samples
-    ratioSum_perGene <-  data %>% 
-                           group_by("Gene") %>%
-                           summarise(ratio_sum = sum(log2(ratio))) %>%
-                           arrange(desc(ratio_sum))
-                  
-
-    #match the order of genes to the kinome data
-    matches <- match(data$Gene, ratioSum_perGene$Gene )
-    #get the new order
-    new_order <- c()
-    for(i in 1:length(matches)){
-      new_order <- c(new_order,which(matches == i))
-    }
-    data[new_order,]
-  })
+    kinomeData <- get_filtered_kinomeData()
+    #get the mean of ratios per gene across all the samples
+    ratioMean_perGene <-  kinomeData %>%  
+                            group_by(Gene) %>%
+                            summarise(mean_sum = mean(ratio)) %>%
+                            arrange(desc(mean_sum))
+  
+    new_order <- data.frame('order'= match(kinomeData$Gene,ratioMean_perGene$Gene),'index' = 1:nrow(kinomeData)) %>%
+                   arrange(order) %>%
+                   select(index)
+    kinomeData[new_order$index,]
+})
 
 
 
