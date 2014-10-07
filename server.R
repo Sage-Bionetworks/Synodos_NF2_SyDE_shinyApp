@@ -6,6 +6,8 @@
 #
 
 library(shiny)
+library("ggplot2")
+library("plyr")
 
 shinyServer(function(input, output, session) {
   
@@ -221,32 +223,70 @@ shinyServer(function(input, output, session) {
                    arrange(order) %>%
                    select(index)
     kinomeData[new_order$index,]
-})
-
-
-
-########################
-## TEST SECTION
-########################
-
-  ##test rchart
-  output$chart1 <- renderChart({
-    hmap <- rPlot(variable ~ School, color = 'rescale', data = findatamelt, type = 'tile')
-    hmap$addParams(height = 400, width=1000, dom="chart1")
-    hmap$guides(reduceXTicks = FALSE)
-    hmap$guides("{color: {scale: {type: gradient, lower: white, upper: red}}}")
-    hmap$guides(y = list(numticks = length(unique(findatamelt$value))))
-    hmap$guides(x = list(numticks = 5))
-    return(hmap)
   })
 
-  output$myChart <- renderChart({
-    names(iris) = gsub("\\.", "", names(iris))
-    p1 <- rPlot(input$x, input$y, data = iris, color = "Species", 
-                facet = "Species", type = 'point')
-    p1$addParams(dom = 'myChart')
-    return(p1)
+  ##########################
+  # Drug Screening Section
+  ##########################
+
+  output$drugScreen_ICx_plot <- renderPlot({
+    
+    drug_levels <- ddply(.data=Drug_ICVals, .variables=c('drug'), .fun=function(x) mean(x$IC50,na.rm=T))
+    drug_levels <- arrange(drug_levels, desc(V1))
+    drug_levels <- drug_levels$drug
+    Drug_ICVals$drug <- factor(Drug_ICVals$drug,levels=drug_levels)
+    ICx <- eval(paste0('IC', input$selected_IC_value))
+    p <- ggplot(data=Drug_ICVals, aes_string(x="drug", y=ICx, group="run")) + geom_line(aes(color=run)) 
+    p <- p + facet_grid(cellLine ~ .) + geom_point(aes(size=-IC50),color='grey50') + theme_bw()
+    p + theme(axis.text.x=element_text(angle=90, hjust=1)) + xlab('Drug') + ylab(paste0(ICx, ' (log10 molar conc)'))
   })
+
+  output$drugResponse_plots <- renderPlot({
+    
+    flt_Drug_normViab <- Drug_normViab
+    if(! is.null(input$selected_drugs)){
+      flt_Drug_normViab <- filter(Drug_normViab, drug %in% input$selected_drugs)  
+    }
+    if( length(unique(flt_Drug_normViab$drug)) < 5){
+      doseResp <- ddply(.data=flt_Drug_normViab, .variables = c('drug', 'cellLine', 'plate', 'run'), 
+                        .fun = tmp_iterator, .parallel = T)
+      p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY, group=cellLine))
+      p <- p + geom_line(aes(color=cellLine)) + facet_grid(run ~ drug) + theme_bw()
+      p <- p + geom_hline(aes(yintercept=0.5), color='red3', linetype='dashed')
+      p <- p + xlab('molar conc (log10)') + ylab('cell viability %')
+      p
+    } else {
+      stop('more drugs selected')
+    }
+  
+  })
+
+
+
+# 
+# 
+# ########################
+# ## TEST SECTION
+# ########################
+# 
+#   ##test rchart
+#   output$chart1 <- renderChart({
+#     hmap <- rPlot(variable ~ School, color = 'rescale', data = findatamelt, type = 'tile')
+#     hmap$addParams(height = 400, width=1000, dom="chart1")
+#     hmap$guides(reduceXTicks = FALSE)
+#     hmap$guides("{color: {scale: {type: gradient, lower: white, upper: red}}}")
+#     hmap$guides(y = list(numticks = length(unique(findatamelt$value))))
+#     hmap$guides(x = list(numticks = 5))
+#     return(hmap)
+#   })
+# 
+#   output$myChart <- renderChart({
+#     names(iris) = gsub("\\.", "", names(iris))
+#     p1 <- rPlot(input$x, input$y, data = iris, color = "Species", 
+#                 facet = "Species", type = 'point')
+#     p1$addParams(dom = 'myChart')
+#     return(p1)
+#   })
   
   
 })

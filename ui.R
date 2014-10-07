@@ -45,12 +45,13 @@ shinyUI( navbarPage("Synodos Data Explorer",
                    mainPanel(
                      tabsetPanel(id="pubData_pathway_panel", type="tabs",
                                  tabPanel("Pathway Enrichment",
-                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL)
+                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL),
+                                          verbatimTextOutput("pubData_nselectedStudies")
                                           ),
                                  tabPanel("Expression",
                                           plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)
                                           #verbatimTextOutput('pubData_nselectedStudies')
-                                          )
+                                         )
                      )
                    ),
                    fluid=T
@@ -78,21 +79,47 @@ shinyUI( navbarPage("Synodos Data Explorer",
                    column(3,showOutput("kinome_barPlot", "nvd3"))
                  )
         ),
+        
         #DrugScreen Panel
         tabPanel('Drug Screens',
                  sidebarPanel(
-                  h5('test') 
-                   
-                   
-                   
+                  h4('Select Cell Viability % (ICx)'),
+                  sliderInput('selected_IC_value','IC Value', min=10,
+                              max=90, step=10, value=50),
+                  
+                  br(),br(),
+                  
+                  h4('Select Drugs'),
+                  selectInput('selected_drugs',NULL, choices = unique(Drug_ICVals$drug),
+                              selectize=T, multiple=T)
+                  
+                  
                  ),
-                 mainPanel(
-                  h5('test') 
-                 )
+                mainPanel(
+                  tabsetPanel(id="drug_screens", type="tabs",
+                              tabPanel("IC Values",
+                                       plotOutput("drugScreen_ICx_plot",height="700px",width="auto",hoverId=NULL)
+                                       ),
+                              tabPanel("Drug Response Curves",
+                                       plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
+                                       )
+                  )
+                ),
+                fluid = T
         ),
-  
-        
-         # Testing Panel
+    #navbar pages option      
+    fluid = T,
+    responsive = T,
+    collapsable = T,
+    footer = list(img(src="synodos-banner.jpg", height="150", width="180"))
+   
+    )
+)
+
+
+
+
+# Testing Panel
 #         tabPanel("testing",
 #                     sidebarPanel(
 #                       selectInput(inputId = "x",
@@ -108,13 +135,4 @@ shinyUI( navbarPage("Synodos Data Explorer",
 #                       showOutput("myChart", "polycharts"),
 #                       showOutput("chart1", "polycharts")
 #                     )
-     
-    #navbar pages option      
-    fluid = T,
-    responsive = T,
-    collapsable = T,
-    footer = list(img(src="synodos-banner.jpg", height="150", width="180"))
-   
-    )
-)
 

@@ -7,6 +7,7 @@ library("reshape2")
 library("scales")
 library("gdata")
 library("dplyr")
+library("plyr")
 library("devtools")
 
 synapseLogin()
@@ -21,10 +22,8 @@ source("global_publicData.R")
 #loading the global kinome screening data
 source("global_kinomeScreens.R")
 
+#loading the global DrugScreens Data
+source("global_DrugScreens.R")
+
 #source("global_testing.R")
-
-
-get_synodos_banner <- function(...){
-  img(src="synodos-banner.jpg",...)
-}
 
