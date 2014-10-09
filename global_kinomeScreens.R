@@ -48,3 +48,4 @@ kinomeRun2 <- temp_kinomeData_dataProcessing(kinomeRun2, kinomeRun2_iTRAQ_to_cel
 
 #combine all the kinome runs
 kinomeData <- rbind(kinomeRun1, kinomeRun2)
+kinomeData['log2_ratio'] <- log2(kinomeData$ratio)

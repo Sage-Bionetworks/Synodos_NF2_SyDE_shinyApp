@@ -33,7 +33,7 @@ shinyUI( navbarPage("Synodos Data Explorer",
                      
                      #condition panel to show available phenotypes
                      conditionalPanel(
-                          condition = "output.pubData_nselectedStudies == 1",
+                          condition = 'input["selected_geo_studies"].length == 1',
                                       br(),
                                       helpText('Available Study Phenotypes'),
                                       selectInput('pubData_selectedPhenotypes', NULL, 
@@ -44,14 +44,12 @@ shinyUI( navbarPage("Synodos Data Explorer",
                    
                    mainPanel(
                      tabsetPanel(id="pubData_pathway_panel", type="tabs",
-                                 tabPanel("Pathway Enrichment",
-                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL),
-                                          verbatimTextOutput("pubData_nselectedStudies")
-                                          ),
                                  tabPanel("Expression",
                                           plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)
-                                          #verbatimTextOutput('pubData_nselectedStudies')
-                                         )
+                                 ),
+                                 tabPanel("Pathway Enrichment",
+                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL)
+                                )
                      )
                    ),
                    fluid=T
@@ -91,6 +89,7 @@ shinyUI( navbarPage("Synodos Data Explorer",
                   
                   h4('Select Drugs'),
                   selectInput('selected_drugs',NULL, choices = unique(Drug_ICVals$drug),
+                              selected = c('AR42'),
                               selectize=T, multiple=T)
                   
                   
@@ -111,8 +110,9 @@ shinyUI( navbarPage("Synodos Data Explorer",
     fluid = T,
     responsive = T,
     collapsable = T,
-    footer = list(img(src="synodos-banner.jpg", height="150", width="180"))
-   
+    footer = list(helpText('Please report any bugs and/or user experience based feedback at apratap@sagebase.org'),
+                  img(src="synodos-banner.jpg", height="150", width="180"))
+                  
     )
 )
 

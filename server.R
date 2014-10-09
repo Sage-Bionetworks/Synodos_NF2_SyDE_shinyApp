@@ -161,11 +161,7 @@ shinyServer(function(input, output, session) {
                  fontsize_row=fontsize_row)
     })
   })
-  
-  output$pubData_nselectedStudies <- renderText({
-    length(input$selected_geo_studies)
-  })
-  
+
  
   #update the available phenotypes for a single study
   observe({
@@ -183,15 +179,14 @@ shinyServer(function(input, output, session) {
   output$kinome_barPlot <- renderChart({
     p <- nPlot(log2_ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
                type="multiBarChart")
-    p$params$width <- 1000
-    p$params$height <- 600
+    p$params$width <- 800
+    p$params$height <- 500
     p$addParams(dom = 'kinome_barPlot')
     return(p)
   })
   
   get_cleaned_kinomeData <- reactive({
     filtered_data <- kinomeData[!apply(kinomeData, 1, function(x) {sum(is.na(x)) > 0}),]
-    filtered_data['log2_ratio'] = log2(filtered_data$ratio)
     filtered_data
   })
   
@@ -214,12 +209,9 @@ shinyServer(function(input, output, session) {
   get_ordered_kinomeData <- reactive({
     kinomeData <- get_filtered_kinomeData()
     #get the mean of ratios per gene across all the samples
-    ratioMean_perGene <-  kinomeData %>%  
-                            group_by(Gene) %>%
-                            summarise(mean_sum = mean(ratio)) %>%
-                            arrange(desc(mean_sum))
-  
-    new_order <- data.frame('order'= match(kinomeData$Gene,ratioMean_perGene$Gene),'index' = 1:nrow(kinomeData)) %>%
+    new_order <- names(sort(tapply(kinomeData$log2_ratio, kinomeData$Gene, mean), decreasing=T))
+    
+    new_order <- data.frame('order'= match(kinomeData$Gene,new_order),'index' = 1:nrow(kinomeData)) %>%
                    arrange(order) %>%
                    select(index)
     kinomeData[new_order$index,]
