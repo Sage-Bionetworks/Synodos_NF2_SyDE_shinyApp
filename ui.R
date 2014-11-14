@@ -13,9 +13,12 @@ shinyUI( navbarPage("Synodos Data Explorer",
                              max=90, step=10, value=50),
                  br(),br(),br(),
                  
-                 h4('Select Cell Lines'),
+                 h4('Select Cell Lines'), 
+                 tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line info"),
                  selectInput('selected_cellLines',NULL, choices = unique(drug_ICVals$cellLine),
                              selectize=T, multiple=T),
+                 
+                 
                  
                  br(),br(),
                  h4('Select Drugs'),

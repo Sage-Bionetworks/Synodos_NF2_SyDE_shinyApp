@@ -250,7 +250,14 @@ shinyServer(function(input, output, session) {
   output$drugScreen_ICx_plot <- renderPlot({
     flt_drug_ICVals <- get_drug_flt_ICVals()
     ICx <- eval(paste0('IC', input$selected_IC_value))
-    flt_drug_ICVals[ICx] <- log10(as.numeric(flt_drug_ICVals[,ICx]))  
+    #remove NA
+    flt_drug_ICVals <- flt_drug_ICVals[! is.na(flt_drug_ICVals[ICx]), ]
+    #convert to log10
+    flt_drug_ICVals[ICx] <- log10(as.numeric(flt_drug_ICVals[,ICx])) 
+    #keep rows where log10 ICx <= 0
+    flt_drug_ICVals <- flt_drug_ICVals[flt_drug_ICVals[ICx] <= 0,]
+    
+   
     drug_levels <- flt_drug_ICVals %>%
                       group_by(drug) %>%
                       summarise(mean=mean(IC50, na.rm=T)) %>%

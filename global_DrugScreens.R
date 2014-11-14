@@ -84,7 +84,6 @@ drug_ICVals <- as.data.frame(rbindlist(list(MGH_ICvals, UCF_ICvals))) #rbindlist
 drug_ICVals <- filter(drug_ICVals, goodNess_of_fit > .70 & hillSlope < 0 )
 
 
-
 # selected_IC_value <- 50
 # ICx <- eval(paste0('IC', selected_IC_value))
 # 
