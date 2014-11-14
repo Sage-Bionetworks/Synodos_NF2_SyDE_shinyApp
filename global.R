@@ -9,6 +9,10 @@ library("gdata")
 library("plyr")
 library("dplyr")
 library("devtools")
+library("ggplot2")
+library("data.table")
+library("doMC")
+registerDoMC(4)
 
 synapseLogin()
 
@@ -27,3 +31,6 @@ source("global_DrugScreens.R")
 
 #source("global_testing.R")
 
+
+
+cellLines_table <- 'https://www.synapse.org/#!Synapse:syn2774452/tables/query/%7B%22limit%22:10,%20%22sql%22:%22SELECT%20*%20FROM%20syn2774452%22,%20%22isConsistent%22:true,%20%22offset%22:0%7D'

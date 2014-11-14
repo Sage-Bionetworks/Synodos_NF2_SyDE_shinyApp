@@ -6,8 +6,8 @@
 #
 
 library(shiny)
-library("ggplot2")
-library("plyr")
+
+
 
 shinyServer(function(input, output, session) {
   
@@ -161,7 +161,6 @@ shinyServer(function(input, output, session) {
                  fontsize_row=fontsize_row)
     })
   })
-
  
   #update the available phenotypes for a single study
   observe({
@@ -172,7 +171,6 @@ shinyServer(function(input, output, session) {
                       choices = choices)
   })
 
-  
   ###############################
   ## Kinome Screen Section
   ###############################
@@ -220,43 +218,79 @@ shinyServer(function(input, output, session) {
   ##########################
   # Drug Screening Section
   ##########################
-
+  
+  get_drug_flt_normViab <- reactive({
+    flt_Drug_normViab <- drug_normViab
+    if(! is.null(input$selected_drugs)){
+      flt_Drug_normViab <- filter(flt_Drug_normViab, drug %in% input$selected_drugs)  
+    }
+    if(! is.null(input$drugs_to_remove)){
+      flt_Drug_normViab <- filter(flt_Drug_normViab, ! drug %in% input$drugs_to_remove)  
+    }
+    if(! is.null(input$selected_cellLines)){
+      flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% input$selected_cellLines)  
+    }
+    flt_Drug_normViab
+  })
+  
+  get_drug_flt_ICVals <- reactive({
+    flt_drug_ICVals <- drug_ICVals
+    if(! is.null(input$selected_drugs)){
+      flt_drug_ICVals <- filter(flt_drug_ICVals, drug %in% input$selected_drugs)  
+    }
+    if(! is.null(input$drugs_to_remove)){
+      flt_drug_ICVals <- filter(flt_drug_ICVals, ! drug %in% input$drugs_to_remove)  
+    }
+    if(! is.null(input$selected_cellLines)){
+      flt_drug_ICVals <- filter(flt_drug_ICVals, cellLine %in% input$selected_cellLines)  
+    }
+    flt_drug_ICVals
+  })
+  
   output$drugScreen_ICx_plot <- renderPlot({
-    
-    drug_levels <- ddply(.data=Drug_ICVals, .variables=c('drug'), .fun=function(x) mean(x$IC50,na.rm=T))
-    drug_levels <- arrange(drug_levels, desc(V1))
-    drug_levels <- drug_levels$drug
-    Drug_ICVals$drug <- factor(Drug_ICVals$drug,levels=drug_levels)
+    flt_drug_ICVals <- get_drug_flt_ICVals()
     ICx <- eval(paste0('IC', input$selected_IC_value))
-    p <- ggplot(data=Drug_ICVals, aes_string(x="drug", y=ICx, group="run")) + geom_line(aes(color=run)) 
-    p <- p + facet_grid(cellLine ~ .) + geom_point(aes(size=-IC50),color='grey50') + theme_bw()
+    flt_drug_ICVals[ICx] <- log10(as.numeric(flt_drug_ICVals[,ICx]))  
+    drug_levels <- flt_drug_ICVals %>%
+                      group_by(drug) %>%
+                      summarise(mean=mean(IC50, na.rm=T)) %>%
+                      arrange(desc(mean)) %>% select(drug)
+    drug_levels <- drug_levels$drug
+    flt_drug_ICVals$drug <- factor(flt_drug_ICVals$drug,levels=drug_levels)
+    facet_by <- paste(input$facet_by, collapse = ' + ' )
+    facet_by <- formula(paste(facet_by, ' ~ .'))
+    p <- ggplot(data=flt_drug_ICVals, aes_string(x="drug", y=ICx, group="cellLine")) + geom_line(aes(color=cellLine)) 
+    p <- p +  geom_point(color='grey50') + theme_bw()
+    if( length(input$facet_by) > 0){
+       p <- p  + facet_grid(facet_by)    
+    }
     p + theme(axis.text.x=element_text(angle=90, hjust=1)) + xlab('Drug') + ylab(paste0(ICx, ' (log10 molar conc)'))
   })
 
-  output$drugResponse_plots <- renderPlot({
-    
-    flt_Drug_normViab <- Drug_normViab
-    if(! is.null(input$selected_drugs)){
-      flt_Drug_normViab <- filter(Drug_normViab, drug %in% input$selected_drugs)  
-    }
-    if( length(unique(flt_Drug_normViab$drug)) < 5){
-      doseResp <- ddply(.data=flt_Drug_normViab, .variables = c('drug', 'cellLine', 'plate', 'run'), 
-                        .fun = tmp_iterator, .parallel = T)
-      p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY, group=cellLine))
-      p <- p + geom_line(aes(color=cellLine)) + facet_grid(run ~ drug) + theme_bw()
-      p <- p + geom_hline(aes(yintercept=0.5), color='red3', linetype='dashed')
-      p <- p + xlab('molar conc (log10)') + ylab('cell viability %')
-      p
-    } else {
-      stop('more drugs selected')
-    }
   
+  
+  
+  output$drugResponse_plots <- renderPlot({
+    validate(need(length(input$selected_drugs) != 0, paste0(" Please select drug/s (max upto 4)")))  
+    validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
+    flt_drug_normViab <- get_drug_flt_normViab()
+  
+    
+    doseResp <- ddply(.data=flt_drug_normViab, .variables = c('drug', 'cellLine', 'experiment', 'group'), 
+                      .fun = tmp_iterator, .parallel = T)
+    facet_by <- paste(input$facet_by, collapse = ' + ' )
+    facet_by <- formula(paste(facet_by, ' ~ drug'))
+    p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY, group=cellLine))
+    p <- p + geom_line(aes(color=cellLine)) + facet_grid( facet_by) + theme_bw()
+    p <- p + geom_hline(aes(yintercept=0.5), color='grey50', linetype='dashed')
+    p <- p + xlab('molar conc (log10)') + ylab('cell viability %')
+    p
   })
 
+})
 
 
-# 
-# 
+
 # ########################
 # ## TEST SECTION
 # ########################
@@ -279,7 +313,4 @@ shinyServer(function(input, output, session) {
 #     p1$addParams(dom = 'myChart')
 #     return(p1)
 #   })
-  
-  
-})
 

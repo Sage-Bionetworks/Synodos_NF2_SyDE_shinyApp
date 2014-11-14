@@ -3,136 +3,123 @@ library(shinyIncubator)
 
 shinyUI( navbarPage("Synodos Data Explorer",
                     
-        ##############
-        #panel 1
-        ##############
-        tabPanel("Public Data",
-                 progressInit(),
-                 h3("Explore NF2 Public Datasets"),
-                 sidebarLayout(
-                   sidebarPanel(
-                     h4('1. Select Grouped Pathways '),
-                     selectInput('grouped_pathways', NULL, choices = names(grouped_pathways),
-                                 selected=c('NF2_related_pathways'), selectize=T, multiple=T),
-                     br(),br(),
-                     h4('2. Select individual pathway/s'),
-                     selectInput('pathways', NULL, choices = rownames(pathway_enrichment_scores), multiple=TRUE, 
-                                 width='400px',selectize=T),
-                     br(), br(),
-                     h4('3. Select based on genes'), 
-                     helpText("Accepts HUGO gene names. Gene names may be separated by comma, space,line, comma "),
-                     tags$textarea(id="custom_gene_list",rows=8,cols=400),
-                     actionButton("searchByGenes_button", "Search by Genes"),
-                     
-                     br(),br(), br(),
+      #panel 1
+      #DrugScreen Panel
+      tabPanel('Drug Screens',
+               h3("Synodos Drug Screens"),
+               sidebarPanel(
+                 h4('Select Cell Viability % (ICx)'),
+                 sliderInput('selected_IC_value','IC Value', min=10,
+                             max=90, step=10, value=50),
+                 br(),br(),br(),
+                 
+                 h4('Select Cell Lines'),
+                 selectInput('selected_cellLines',NULL, choices = unique(drug_ICVals$cellLine),
+                             selectize=T, multiple=T),
+                 
+                 br(),br(),
+                 h4('Select Drugs'),
+                 selectInput('selected_drugs',NULL, choices = unique(drug_ICVals$drug),
+                             selectize=T, multiple=T),
+                 
+                 br(), br(),
+                 h4('Remove Drugs'),
+                 selectInput('drugs_to_remove',NULL, choices = unique(drug_ICVals$drug),
+                             selectize=T, multiple=T),
+                 
+                 br(), br(),
+                 h4('Plot settings'),
+                 selectInput('facet_by','Facet by', choices =c('group', 'experiment', 'cellLine'),
+                             selected = c('experiment', 'group'),
+                             selectize=T, multiple=T)
+               ),
+               mainPanel(
+                 tabsetPanel(id="drug_screens", type="tabs",
+                             tabPanel("Drug Response Curves",
+                                      plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
+                             ),
+                             tabPanel("IC Values",
+                                      plotOutput("drugScreen_ICx_plot",height="700px",width="auto",hoverId=NULL)
+                             )
+                 )
+               ),
+               fluid=T
+        ),#END TabPanel("Drug Screen Data")
+         
                     
-                     h4("Filtering options "),
-                     h5('A. By GEO studies'),
-                     selectInput('selected_geo_studies', NULL, choices = unique(publicData_phenotype[['studyId']]),
-                                  selectize=T, multiple=T),
-                     
-                     #condition panel to show available phenotypes
-                     conditionalPanel(
-                          condition = 'input["selected_geo_studies"].length == 1',
-                                      br(),
-                                      helpText('Available Study Phenotypes'),
-                                      selectInput('pubData_selectedPhenotypes', NULL, 
-                                                  choices = '',
-                                                  selectize=T, multiple=T)
-                     )
-                   ),
-                   
-                   mainPanel(
-                     tabsetPanel(id="pubData_pathway_panel", type="tabs",
-                                 tabPanel("Expression",
-                                          plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)
-                                 ),
-                                 tabPanel("Pathway Enrichment",
-                                          plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL)
-                                )
-                     )
-                   ),
-                   fluid=T
-                 )
-        ),#END TabPanel("Public Data")
-        
-                  
-        # Panel 2: Kinome Screens
-        tabPanel("Kinome Screens",
-                 h3("Synodos Kinome Screens"),
-                 sidebarPanel(
-                   h4('1. Select Samples'),
-                   selectInput('kinome_selected_samples', NULL, choices=unique(kinomeData$condition),
-                                selected = unique(kinomeData$condition)[1], selectize=T, multiple=T),
-                   br(),br(),
-                   h4('Filter By:'),
-                   br(),
-                   
-                   h4('2. Select Kinase Family'),
-                   selectInput('kinome_selected_kinaseFamily', NULL, choices = c('ALL',unique(kinomeData$Family)),
-                               selected = unique(kinomeData$Family)[1:2], selectize=T, multiple=T),
-                   br(),br(),br()
-                 ),
-                 mainPanel(
-                   column(3,showOutput("kinome_barPlot", "nvd3"))
-                 )
-        ),
-        
-        #DrugScreen Panel
-        tabPanel('Drug Screens',
-                 sidebarPanel(
-                  h4('Select Cell Viability % (ICx)'),
-                  sliderInput('selected_IC_value','IC Value', min=10,
-                              max=90, step=10, value=50),
-                  
+       # Panel 2: Kinome Screens
+       tabPanel("Kinome Screens",
+                h3("Synodos Kinome Screens"),
+                sidebarPanel(
+                  h4('1. Select Samples'),
+                  selectInput('kinome_selected_samples', NULL, choices=unique(kinomeData$condition),
+                              selected = unique(kinomeData$condition)[1], selectize=T, multiple=T),
                   br(),br(),
+                  h4('Filter By:'),
+                  br(),
                   
-                  h4('Select Drugs'),
-                  selectInput('selected_drugs',NULL, choices = unique(Drug_ICVals$drug),
-                              selected = c('AR42'),
-                              selectize=T, multiple=T)
-                  
-                  
-                 ),
-                mainPanel(
-                  tabsetPanel(id="drug_screens", type="tabs",
-                              tabPanel("IC Values",
-                                       plotOutput("drugScreen_ICx_plot",height="700px",width="auto",hoverId=NULL)
-                                       ),
-                              tabPanel("Drug Response Curves",
-                                       plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
-                                       )
-                  )
+                  h4('2. Select Kinase Family'),
+                  selectInput('kinome_selected_kinaseFamily', NULL, choices = c('ALL',unique(kinomeData$Family)),
+                              selected = unique(kinomeData$Family)[1:2], selectize=T, multiple=T),
+                  br(),br(),br()
                 ),
-                fluid = T
-        ),
+                mainPanel(
+                  column(3,showOutput("kinome_barPlot", "nvd3"))
+                )
+       ),  
+                    
+                    
+      #Tab panel 3
+      tabPanel("Public Data",
+               progressInit(),
+               h3("Explore NF2 Public Datasets"),
+                 sidebarPanel(
+                   h4('1. Select Grouped Pathways '),
+                   selectInput('grouped_pathways', NULL, choices = names(grouped_pathways),
+                               selected=c('NF2_related_pathways'), selectize=T, multiple=T),
+                   br(),br(),
+                   h4('2. Select individual pathway/s'),
+                   selectInput('pathways', NULL, choices = rownames(pathway_enrichment_scores), multiple=TRUE, 
+                               width='400px',selectize=T),
+                   br(), br(),
+                   h4('3. Select based on genes'), 
+                   helpText("Accepts HUGO gene names. Gene names may be separated by comma, space,line, comma "),
+                   tags$textarea(id="custom_gene_list",rows=8,cols=400),
+                   actionButton("searchByGenes_button", "Search by Genes"),
+                   
+                   br(),br(), br(),
+                  
+                   h4("Filtering options "),
+                   h5('A. By GEO studies'),
+                   selectInput('selected_geo_studies', NULL, choices = unique(publicData_phenotype[['studyId']]),
+                                selectize=T, multiple=T),
+                   
+                   #condition panel to show available phenotypes
+                   conditionalPanel(
+                        condition = 'input["selected_geo_studies"].length == 1',
+                                    br(),
+                                    helpText('Available Study Phenotypes'),
+                                    selectInput('pubData_selectedPhenotypes', NULL, 
+                                                choices = '',
+                                                selectize=T, multiple=T)
+                   )
+                 ),
+                 
+                 mainPanel(
+                   tabsetPanel(id="pubData_pathway_panel", type="tabs",
+                               tabPanel("Expression",
+                                        plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)),
+                               tabPanel("Pathway Enrichment",
+                                        plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL))
+                   )
+                 )
+      ), #END TabPanel("Public Data")
+               
     #navbar pages option      
     fluid = T,
     responsive = T,
     collapsable = T,
     footer = list(helpText('Please report any bugs and/or user experience based feedback at apratap@sagebase.org'),
                   img(src="synodos-banner.jpg", height="150", width="180"))
-                  
-    )
-)
-
-
-
-
-# Testing Panel
-#         tabPanel("testing",
-#                     sidebarPanel(
-#                       selectInput(inputId = "x",
-#                                   label = "Choose X",
-#                                   choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
-#                                   selected = "SepalLength"),
-#                       selectInput(inputId = "y",
-#                                   label = "Choose Y",
-#                                   choices = c('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
-#                                   selected = "SepalWidth")
-#                     ),
-#                     mainPanel(
-#                       showOutput("myChart", "polycharts"),
-#                       showOutput("chart1", "polycharts")
-#                     )
-
+    )#END nav bar
+) #END ShinyUI
