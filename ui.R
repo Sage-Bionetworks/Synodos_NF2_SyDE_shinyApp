@@ -8,41 +8,53 @@ shinyUI( navbarPage("Synodos Data Explorer",
       tabPanel('Drug Screens',
                h3("Synodos Drug Screens"),
                sidebarPanel(
-                 h4('Select Cell Viability % (ICx)'),
-                 sliderInput('selected_IC_value','IC Value', min=10,
-                             max=90, step=10, value=50),
+                
+                 
+                 h4('1. Select Cell Lines'), 
+                 h5('MGH Cell Lines'), 
+                 selectInput('MGH_cellLines',NULL, choices = unique(MGH_normViab$cellLine),
+                             selectize=T, multiple=T),
+                 h5('UCF Cell Lines'),
+                 selectInput('UCF_cellLines',NULL, choices = unique(UCF_normViab$cellLine),
+                             selectize=T, multiple=T),
+                 tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line metadata"),
+                 
+                               
                  br(),br(),br(),
                  
-                 h4('Select Cell Lines'), 
-                 tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line info"),
-                 selectInput('selected_cellLines',NULL, choices = unique(drug_ICVals$cellLine),
-                             selectize=T, multiple=T),
-                 
-                 
-                 
-                 br(),br(),
-                 h4('Select Drugs'),
+                 h4('2. Select Drugs'),
                  selectInput('selected_drugs',NULL, choices = unique(drug_ICVals$drug),
-                             selectize=T, multiple=T),
-                 
-                 br(), br(),
-                 h4('Remove Drugs'),
-                 selectInput('drugs_to_remove',NULL, choices = unique(drug_ICVals$drug),
                              selectize=T, multiple=T),
                  
                  br(), br(),
                  h4('Plot settings'),
                  selectInput('facet_by','Facet by', choices =c('group', 'experiment', 'cellLine'),
                              selected = c('experiment', 'group'),
-                             selectize=T, multiple=T)
+                             selectize=T, multiple=T),
+                 
+                 br(), br()
+                 
                ),
                mainPanel(
                  tabsetPanel(id="drug_screens", type="tabs",
-                             tabPanel("Drug Response Curves",
-                                      plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
+                             tabPanel("Viability",
+                                      plotOutput("global_drugViab_heatMap",height="700px",width="auto",hoverId=NULL),
+                                      br(), br(),
+                                      helpText("ps: due to different dynamic range of drug doses across UCF and MGH cellLines
+                                               , comparing these together on a heatmap will result in some columns being blank")
+                                      
                              ),
-                             tabPanel("IC Values",
+                             tabPanel("Max Efficacy",
+                                      plotOutput("drug_efficacy",height="700px",width="auto",hoverId=NULL)
+                             ),
+                             tabPanel("ICx",
+                                      h4('Select Cell Viability % (ICx)'),
+                                      sliderInput('selected_IC_value','IC Value', min=10,
+                                                  max=90, step=10, value=50),
                                       plotOutput("drugScreen_ICx_plot",height="700px",width="auto",hoverId=NULL)
+                             ),
+                             tabPanel("Dose Response",
+                                      plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
                              )
                  )
                ),
@@ -74,7 +86,6 @@ shinyUI( navbarPage("Synodos Data Explorer",
                     
       #Tab panel 3
       tabPanel("Public Data",
-               progressInit(),
                h3("Explore NF2 Public Datasets"),
                  sidebarPanel(
                    h4('1. Select Grouped Pathways '),

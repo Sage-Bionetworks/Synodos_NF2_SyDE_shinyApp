@@ -8,7 +8,6 @@
 library(shiny)
 
 
-
 shinyServer(function(input, output, session) {
   
   selected_pathways <- reactive({
@@ -219,6 +218,11 @@ shinyServer(function(input, output, session) {
   # Drug Screening Section
   ##########################
   
+  
+  get_selected_cellLines <- reactive({
+    c(input$MGH_cellLines, input$UCF_cellLines)
+  })
+  
   get_drug_flt_normViab <- reactive({
     flt_Drug_normViab <- drug_normViab
     if(! is.null(input$selected_drugs)){
@@ -227,8 +231,8 @@ shinyServer(function(input, output, session) {
     if(! is.null(input$drugs_to_remove)){
       flt_Drug_normViab <- filter(flt_Drug_normViab, ! drug %in% input$drugs_to_remove)  
     }
-    if(! is.null(input$selected_cellLines)){
-      flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% input$selected_cellLines)  
+    if(! is.null(get_selected_cellLines())){
+      flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% get_selected_cellLines())  
     }
     flt_Drug_normViab
   })
@@ -241,8 +245,8 @@ shinyServer(function(input, output, session) {
     if(! is.null(input$drugs_to_remove)){
       flt_drug_ICVals <- filter(flt_drug_ICVals, ! drug %in% input$drugs_to_remove)  
     }
-    if(! is.null(input$selected_cellLines)){
-      flt_drug_ICVals <- filter(flt_drug_ICVals, cellLine %in% input$selected_cellLines)  
+    if(! is.null(get_selected_cellLines())){
+      flt_drug_ICVals <- filter(flt_drug_ICVals, cellLine %in% get_selected_cellLines())  
     }
     flt_drug_ICVals
   })
@@ -260,37 +264,86 @@ shinyServer(function(input, output, session) {
    
     drug_levels <- flt_drug_ICVals %>%
                       group_by(drug) %>%
-                      summarise(mean=mean(IC50, na.rm=T)) %>%
-                      arrange(desc(mean)) %>% select(drug)
+                      summarise(med=median(IC50, na.rm=T)) %>%
+                      arrange(desc(med)) %>% select(drug)
     drug_levels <- drug_levels$drug
     flt_drug_ICVals$drug <- factor(flt_drug_ICVals$drug,levels=drug_levels)
     facet_by <- paste(input$facet_by, collapse = ' + ' )
     facet_by <- formula(paste(facet_by, ' ~ .'))
-    p <- ggplot(data=flt_drug_ICVals, aes_string(x="drug", y=ICx, group="cellLine")) + geom_line(aes(color=cellLine)) 
-    p <- p +  geom_point(color='grey50') + theme_bw()
+    p <- ggplot(data=flt_drug_ICVals, aes_string(x="drug", y=ICx, group="cellLine")) 
+    p <- p + geom_point(aes(color=cellLine), size=3) + theme_bw()
     if( length(input$facet_by) > 0){
        p <- p  + facet_grid(facet_by)    
     }
     p + theme(axis.text.x=element_text(angle=90, hjust=1)) + xlab('Drug') + ylab(paste0(ICx, ' (log10 molar conc)'))
   })
+  
+  output$drug_efficacy <- renderPlot({
+    flt_drug_ICVals <- get_drug_flt_ICVals()
+    
+    drug_levels <- flt_drug_ICVals %>%
+      group_by(drug) %>%
+      summarise(med=median(maxEfficacy, na.rm=T)) %>%
+      arrange(desc(med)) %>% select(drug)
+    drug_levels <- drug_levels$drug
+    flt_drug_ICVals$drug <- factor(flt_drug_ICVals$drug,levels=drug_levels)
+    facet_by <- paste(input$facet_by, collapse = ' + ' )
+    facet_by <- formula(paste(facet_by, ' ~ .'))
+    p <- ggplot(data=flt_drug_ICVals, aes(x=drug, y=maxEfficacy*100, group=cellLine)) 
+    p <- p + geom_point(aes(color=cellLine), size=3) + theme_bw()
+    if( length(input$facet_by) > 0){
+      p <- p  + facet_grid(facet_by)    
+    }
+    p <- p + theme(axis.text.x=element_text(angle=90, hjust=1)) + xlab('Drug') + ylab('% Efficacy')
+  })
+  
+  
+  output$global_drugViab_heatMap <- renderPlot({
+    
+    validate(need(length(get_selected_cellLines()) != 0, paste0(" Please select cellLine/s")))  
+    #validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
+    
+    x <- get_drug_flt_normViab()
+    drugViab_dosages <- dcast(x, group+experiment+stage+cellLine+drug+replicate ~ conc, value.var="normViability",
+                              fun.aggregate = function(x) mean(x))
+    
+    m <- drugViab_dosages[,-c(1:6)] * 100  #to convert fraction to percentage viability
+    rowAnnotation <- drugViab_dosages[,c('drug'),drop=F]
+    #m.scaled <- t(scale(t(m)))
+    
+    #convert colnames to microMolar
+    colnames(m) <- as.numeric(colnames(m))*1e+6
+    
+    aheatmap(m,
+             scale='none',
+             distfun="euclidean",
+             Colv=NA,
+             annRow = rowAnnotation,
+             info=TRUE,
+             cexRow=0,
+             main = 'Cell Viability v/s Drug Dosage(microMolar)',
+             sub = 'color signifies cell viability %'
+             )
+             
+  })
+  
 
-  
-  
-  
   output$drugResponse_plots <- renderPlot({
     validate(need(length(input$selected_drugs) != 0, paste0(" Please select drug/s (max upto 4)")))  
     validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
     flt_drug_normViab <- get_drug_flt_normViab()
-  
-    
+
     doseResp <- ddply(.data=flt_drug_normViab, .variables = c('drug', 'cellLine', 'experiment', 'group'), 
                       .fun = tmp_iterator, .parallel = T)
+    
     facet_by <- paste(input$facet_by, collapse = ' + ' )
     facet_by <- formula(paste(facet_by, ' ~ drug'))
-    p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY, group=cellLine))
+    p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY*100, group=cellLine))
     p <- p + geom_line(aes(color=cellLine)) + facet_grid( facet_by) + theme_bw()
-    p <- p + geom_hline(aes(yintercept=0.5), color='grey50', linetype='dashed')
-    p <- p + xlab('molar conc (log10)') + ylab('cell viability %')
+    p <- p + geom_hline(aes(yintercept=50), color='grey50', linetype='dashed')
+    p <- p + xlab('micromolar conc') + ylab('cell viability %') 
+    p <- p + scale_x_continuous(breaks=seq(from=-10,to=-1,by=1),
+                                labels = lapply(seq(from=-10,to=-1,by=1), function(x) (10^x)*(1e+6)  ))
     p
   })
 

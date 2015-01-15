@@ -15,6 +15,7 @@ get_drugResponse_stats <- function(conc,viability,...){
   results['IC70'] = ICx_est[7,'x']
   results['IC80'] = ICx_est[8,'x']
   results['IC90'] = ICx_est[9,'x']
+  results['maxEfficacy'] = max(getYcurve(res)) #get the maximum efficacy of the drug
   results['bottom_asymptote'] = res@pars['bottom']
   results['top_asymptote'] = res@pars['top']
   results['hillSlope'] =  res@pars['scal']
@@ -24,6 +25,7 @@ get_drugResponse_stats <- function(conc,viability,...){
   results <- cbind(results,fittedVals)
   results
 }
+
 
 tmp_iterator <- function(df){
   tryCatch({
@@ -45,31 +47,36 @@ UCF_normViab <- 'syn2773870'
 UCF_normViab <- synGet(UCF_normViab)
 UCF_normViab <- read.delim(UCF_normViab@filePath, check.names=F, sep="\t", header=T)
 UCF_normViab['group'] <- 'UCF'
+UCF_normViab['stage'] <- 'NA'
+UCF_normViab$cellLine <- gsub("^ ", "", UCF_normViab$cellLine)
+
 
 MGH_normViab <- 'syn2773792'
 MGH_normViab <- synGet(MGH_normViab)
 MGH_normViab <- read.delim(MGH_normViab@filePath, check.names=F, sep="\t", header=T)
 MGH_normViab['group'] <- 'MGH'
-
+MGH_normViab$cellLine <- gsub("^ ", "", MGH_normViab$cellLine)
 
 
 #drop unnecassary cols
-drop_cols <- c('plate', 'meanDMSO', 'viability')
+drop_cols <- c('plate', 'medianDMSO', 'viability')
 MGH_normViab <- MGH_normViab[, !colnames(MGH_normViab) %in% drop_cols]
 UCF_normViab <- UCF_normViab[, !colnames(UCF_normViab) %in% drop_cols]
+
 
 #align the columns of the two dataframe before combining them
 UCF_normViab <- UCF_normViab[,colnames(MGH_normViab)]
 
 #combined drug normViab
-drug_normViab <- as.data.frame(rbindlist(list(UCF_normViab, MGH_normViab))) #rbindlist is fastest for concatenating data.frames/ data.tables by row
-
+#rbindlist is fastest for concatenating data.frames/ data.tables by row
+drug_normViab <- as.data.frame(rbindlist(list(UCF_normViab, MGH_normViab))) 
 
 #download the precomputed IC Vals for MGH and UCF Data
 UCF_ICvals <- 'syn2773891'
 UCF_ICvals <- synGet(UCF_ICvals)
 UCF_ICvals <- read.delim(UCF_ICvals@filePath, check.names=F, sep="\t", header=T)
 UCF_ICvals['group'] = 'UCF'
+UCF_ICvals['stage'] = 'NA'
 
 MGH_ICvals <- 'syn2773794'
 MGH_ICvals <- synGet(MGH_ICvals)
@@ -79,6 +86,8 @@ MGH_ICvals['group'] = 'MGH'
 #align the columns of the two dataframe before combining them
 UCF_ICvals <- UCF_ICvals[,colnames(MGH_ICvals)]
 
+colnames(MGH_ICvals)
+colnames(UCF_ICvals)
 #combined 
 drug_ICVals <- as.data.frame(rbindlist(list(MGH_ICvals, UCF_ICvals))) #rbindlist is fastest for concatenating data.frames/ data.tables by row
 drug_ICVals <- filter(drug_ICVals, goodNess_of_fit > .70 & hillSlope < 0 )

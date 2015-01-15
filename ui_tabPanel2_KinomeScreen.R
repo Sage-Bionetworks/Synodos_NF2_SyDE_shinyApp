@@ -8,10 +8,10 @@ library(reshape2)
 library("gdata")
 
 
-test_MIB_MS_datasheet <- "syn2506526"
-test_MIB_MS_datasheet <- synGet(test_MIB_MS_datasheet)@filePath
-df <- read.xls(test_MIB_MS_datasheet, sheet=2,header=T)
-df <- df[,c(1:20)]
+MIB_MS_datasheet <- synGet('syn2679231')
+df <- read.xls(MIB_MS_datasheet@filePath, sheet=2, header=T, 
+               check.names=F)
+df <- df[,c(1:14)]
 
 #get the colnames which are other than the first 5 cols and not containing the variability and count
 ratio_cols_match_pattern = paste0("Variability|Count|", paste(colnames(df)[1:5], collapse="|"))
@@ -21,30 +21,20 @@ count_cols <- colnames(df)[grepl("Count",colnames(df),perl=T)]
 
 ratios <- melt(df, id.vars=colnames(df)[1:5], measure.vars = ratio_cols, variable.name = 'sample' , value.name = 'ratio')
 ratio_variability <- melt(df,id.vars=colnames(df)[1:5], measure.vars = variability_cols, variable.name = 'sample' , value.name = 'variability')
-ratio_variability$sample <- gsub('\\.Var.*','', ratio_variability$sample,perl=T)
+ratio_variability$sample <- gsub(' Var.*','', ratio_variability$sample,perl=T)
 psm_counts <-   melt(df,id.vars=colnames(df)[1:5], measure.vars = count_cols, variable.name = 'sample' , value.name = 'count')
-psm_counts$sample <- gsub('\\.Count.*','', psm_counts$sample,perl=T)
-
+psm_counts$sample <- gsub(' Count.*','', psm_counts$sample,perl=T)
 
 #create the final data frame
 merge.all <- function(x,y){ merge(x,y) }
 finalData <-Reduce(merge.all, list(ratios, ratio_variability, psm_counts))
 
 
-group_by(finalData, "Gene") %>% summarise(max(ratio))
-
-  finalData %.% 
-  group_by("Gene") %.%
-  summarise(count=n())
-
-sessionInfo()
-  
-  summarise(ratio_sum = sum(log2(ratio)))
-
-
-
-                        arrange(desc(ratio_sum))
-
+iTRAQ_to_cellLine <- list('116'='A3','117'='A4','114'='A17','115'='A19')                                                    
+condition <- lapply(strsplit(as.character(finalData$sample), split='/'),
+                    function(x) paste0(iTRAQ_to_cellLine[[x[[1]]]], '/', iTRAQ_to_cellLine[[x[[2]]]]) )
+condition <- paste0(condition, ' fullSerum')
+finalData['condition'] <- condition
 
 
 matches <- match(finalData$Gene, ratioSum_perGene$Gene )
