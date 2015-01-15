@@ -12,10 +12,10 @@ shinyUI( navbarPage("Synodos Data Explorer",
                  
                  h4('1. Select Cell Lines'), 
                  h5('MGH Cell Lines'), 
-                 selectInput('MGH_cellLines',NULL, choices = unique(MGH_normViab$cellLine),
-                             selectize=T, multiple=T),
+                 selectInput('MGH_cellLines',NULL, choices = c('ALL', unique(MGH_normViab$cellLine)),
+                             selectize=T, multiple=T, selected = c('Syn1', 'Syn2', 'Syn10', 'Syn7')),
                  h5('UCF Cell Lines'),
-                 selectInput('UCF_cellLines',NULL, choices = unique(UCF_normViab$cellLine),
+                 selectInput('UCF_cellLines',NULL, choices = c('ALL',unique(UCF_normViab$cellLine)),
                              selectize=T, multiple=T),
                  tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line metadata"),
                  
@@ -23,8 +23,8 @@ shinyUI( navbarPage("Synodos Data Explorer",
                  br(),br(),br(),
                  
                  h4('2. Select Drugs'),
-                 selectInput('selected_drugs',NULL, choices = unique(drug_ICVals$drug),
-                             selectize=T, multiple=T),
+                 selectInput('selected_drugs',NULL, choices = c('ALL', unique(drug_ICVals$drug)),
+                             selectize=T, multiple=T, selected=c('Bortezomib', 'Ganetespib', 'Panobinostat')),
                  
                  br(), br(),
                  h4('Plot settings'),
@@ -45,7 +45,8 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                       
                              ),
                              tabPanel("Max Efficacy",
-                                      plotOutput("drug_efficacy",height="700px",width="auto",hoverId=NULL)
+                                      plotOutput("drug_efficacy",height="700px",width="auto",hoverId=NULL),
+                                      helpText("ps: Efficacy is the % of cells that were killed by the given drug")
                              ),
                              tabPanel("ICx",
                                       h4('Select Cell Viability % (ICx)'),
