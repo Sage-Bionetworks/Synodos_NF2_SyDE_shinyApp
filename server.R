@@ -305,11 +305,12 @@ shinyServer(function(input, output, session) {
     
     #convert colnames to microMolar
     colnames(m) <- as.numeric(colnames(m))*1e+6
-    
+    #cluster_rows = if(drugViability_heatmap_col_cluster == TRUE) TRUE else NA
     aheatmap(m,
              scale='none',
              distfun="euclidean",
              Colv=NA,
+             Rowv =  if(input$drugViability_heatmap_col_cluster == TRUE) TRUE else NA,
              annRow = rowAnnotation,
              info=TRUE,
              cexRow=0,

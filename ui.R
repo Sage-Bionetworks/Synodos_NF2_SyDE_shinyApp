@@ -40,8 +40,14 @@ shinyUI( navbarPage("Synodos Data Explorer",
                mainPanel(
                  tabsetPanel(id="drug_screens", type="tabs",
                              tabPanel("Viability",
+                                      checkboxInput("drugViability_heatmap_col_cluster", label=("cluster drugs (y-axis)"), 
+                                                   value=TRUE),
+                                      hr(),
                                       plotOutput("global_drugViab_heatMap",height="700px",width="auto",hoverId=NULL),
                                       br(), br(),
+                                      helpText("The heatmap above compares the normalized cell viablity(%) across the drug dosages(x-axis) \n
+                                               Each y-axis row is a replicate for the selected cellLines and drugs."),                                     
+                                      br(),
                                       helpText("ps: due to different dynamic range of drug doses across UCF and MGH cellLines
                                                , comparing these together on a heatmap will result in some columns being blank")
                                       
