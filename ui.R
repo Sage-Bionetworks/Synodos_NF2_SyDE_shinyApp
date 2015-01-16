@@ -19,12 +19,14 @@ shinyUI( navbarPage("Synodos Data Explorer",
                              selectize=T, multiple=T),
                  tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line metadata"),
                  
-                               
+                
                  br(),br(),br(),
                  
                  h4('2. Select Drugs'),
-                 selectInput('selected_drugs',NULL, choices = c('ALL', unique(drug_ICVals$drug)),
+                 selectInput('selected_drugs',NULL, choices = c('ALL', unique(drug_normViab$drug)),
                              selectize=T, multiple=T, selected=c('Bortezomib', 'Ganetespib', 'Panobinostat')),
+                 tags$a(href=global_drug_metadata_link,target="_blank", "drug metadata"),
+                 
                  
                  br(), br(),
                  h4('Plot settings'),
@@ -55,6 +57,8 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                       plotOutput("drugScreen_ICx_plot",height="700px",width="auto",hoverId=NULL)
                              ),
                              tabPanel("Dose Response",
+                                      radioButtons("dose_response_plot_splitBy", label=("split graph by"), 
+                                                  choices = c('drug', 'cellLine'), selected = 'drug'),
                                       plotOutput("drugResponse_plots",height="700px",width="auto",hoverId=NULL)
                              )
                  )

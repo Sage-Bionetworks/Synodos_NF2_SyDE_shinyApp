@@ -49,6 +49,8 @@ UCF_normViab <- read.delim(UCF_normViab@filePath, check.names=F, sep="\t", heade
 UCF_normViab['group'] <- 'UCF'
 UCF_normViab['stage'] <- 'NA'
 UCF_normViab$cellLine <- gsub("^ ", "", UCF_normViab$cellLine)
+UCF_normViab$cellLine <- gsub("Nf2 --", "Nf2--", UCF_normViab$cellLine)
+
 
 
 MGH_normViab <- 'syn2773792'
@@ -57,12 +59,10 @@ MGH_normViab <- read.delim(MGH_normViab@filePath, check.names=F, sep="\t", heade
 MGH_normViab['group'] <- 'MGH'
 MGH_normViab$cellLine <- gsub("^ ", "", MGH_normViab$cellLine)
 
-
 #drop unnecassary cols
 drop_cols <- c('plate', 'medianDMSO', 'viability')
 MGH_normViab <- MGH_normViab[, !colnames(MGH_normViab) %in% drop_cols]
 UCF_normViab <- UCF_normViab[, !colnames(UCF_normViab) %in% drop_cols]
-
 
 #align the columns of the two dataframe before combining them
 UCF_normViab <- UCF_normViab[,colnames(MGH_normViab)]
@@ -78,6 +78,7 @@ UCF_ICvals <- read.delim(UCF_ICvals@filePath, check.names=F, sep="\t", header=T)
 UCF_ICvals['group'] = 'UCF'
 UCF_ICvals['stage'] = 'NA'
 
+
 MGH_ICvals <- 'syn2773794'
 MGH_ICvals <- synGet(MGH_ICvals)
 MGH_ICvals <- read.delim(MGH_ICvals@filePath, check.names=F, sep="\t", header=T)
@@ -86,11 +87,10 @@ MGH_ICvals['group'] = 'MGH'
 #align the columns of the two dataframe before combining them
 UCF_ICvals <- UCF_ICvals[,colnames(MGH_ICvals)]
 
-colnames(MGH_ICvals)
-colnames(UCF_ICvals)
 #combined 
 drug_ICVals <- as.data.frame(rbindlist(list(MGH_ICvals, UCF_ICvals))) #rbindlist is fastest for concatenating data.frames/ data.tables by row
 drug_ICVals <- filter(drug_ICVals, goodNess_of_fit > .70 & hillSlope < 0 )
+
 
 
 # selected_IC_value <- 50

@@ -133,14 +133,13 @@ shinyServer(function(input, output, session) {
       fontsize_row = 0
     }
     scaled_mat = t(scale(t(filtered_pathway_enrichment_matrix())))
-    withProgress(session, {
-                            setProgress(message = "clustering & rendering heatmap, please wait", 
-                                        detail = "This may take a few moments...")
+    withProgress(message = "clustering & rendering heatmap, please wait", 
+                 detail = "This may take a few moments...", {
                             expHeatMap(scaled_mat, pubData_filteredAnnotation(),
                                        scale=F,
                                        fontsize_col=0,
                                        fontsize_row=fontsize_row)
-    })
+                })
   })
   
   #heatmap for EXPRESSION pubData 
@@ -150,15 +149,14 @@ shinyServer(function(input, output, session) {
       fontsize_row = 0
     }
     scaled_expmat = t(scale(t(filtered_expression_matrix())))
-    withProgress(session, {
-      setProgress(message = "clustering & rendering heatmap, please wait", 
-                  detail = "This may take a few moments...")
-      expHeatMap(scaled_expmat, 
-                 pubData_filteredAnnotation(),
-                 scale = F,
-                 fontsize_col=0,
-                 fontsize_row=fontsize_row)
-    })
+     withProgress( message = "clustering & rendering heatmap, please wait", 
+                   detail = "This may take a few moments...", {
+                     expHeatMap(scaled_expmat, 
+                                pubData_filteredAnnotation(),
+                                scale = F,
+                                fontsize_col=0,
+                                fontsize_row=fontsize_row)               
+                   })
   })
  
   #update the available phenotypes for a single study
@@ -218,36 +216,29 @@ shinyServer(function(input, output, session) {
   # Drug Screening Section
   ##########################
   
-  
   get_selected_cellLines <- reactive({
-    c(input$MGH_cellLines, input$UCF_cellLines)
+    MGH_cellLines <- if('ALL' %in% input$MGH_cellLines) unique(MGH_normViab$cellLine) else input$MGH_cellLines
+    UCF_cellLines <- if('ALL' %in% input$UCF_cellLines) unique(UCF_normViab$cellLine) else input$UCF_cellLines
+    cellLines <- c(MGH_cellLines,UCF_cellLines)
+    validate(need(length(cellLines) != 0, "Atleast one cellLine needs to be selected" ) )
+    cellLines
+  })
+  
+  get_selected_drugs <- reactive({
+    drugs <- if('ALL' %in% input$selected_drugs) unique(drug_normViab$drug) else input$selected_drugs
+    validate(need(length(drugs) != 0, "Atleast one drug needs to be selected"))
+    drugs
   })
   
   get_drug_flt_normViab <- reactive({
-    flt_Drug_normViab <- drug_normViab
-    if(! is.null(input$selected_drugs)){
-      flt_Drug_normViab <- filter(flt_Drug_normViab, drug %in% input$selected_drugs)  
-    }
-    if(! is.null(input$drugs_to_remove)){
-      flt_Drug_normViab <- filter(flt_Drug_normViab, ! drug %in% input$drugs_to_remove)  
-    }
-    if(! is.null(get_selected_cellLines())){
-      flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% get_selected_cellLines())  
-    }
+    flt_Drug_normViab <- filter(drug_normViab, drug %in% get_selected_drugs())  
+    flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% get_selected_cellLines())  
     flt_Drug_normViab
   })
   
   get_drug_flt_ICVals <- reactive({
-    flt_drug_ICVals <- drug_ICVals
-    if(! is.null(input$selected_drugs)){
-      flt_drug_ICVals <- filter(flt_drug_ICVals, drug %in% input$selected_drugs)  
-    }
-    if(! is.null(input$drugs_to_remove)){
-      flt_drug_ICVals <- filter(flt_drug_ICVals, ! drug %in% input$drugs_to_remove)  
-    }
-    if(! is.null(get_selected_cellLines())){
-      flt_drug_ICVals <- filter(flt_drug_ICVals, cellLine %in% get_selected_cellLines())  
-    }
+    flt_drug_ICVals <- filter(drug_ICVals, drug %in% get_selected_drugs())  
+    flt_drug_ICVals <- filter(flt_drug_ICVals, cellLine %in% get_selected_cellLines())  
     flt_drug_ICVals
   })
   
@@ -302,7 +293,7 @@ shinyServer(function(input, output, session) {
   output$global_drugViab_heatMap <- renderPlot({
     
     validate(need(length(get_selected_cellLines()) != 0, paste0(" Please select cellLine/s")))  
-    #validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
+    validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
     
     x <- get_drug_flt_normViab()
     drugViab_dosages <- dcast(x, group+experiment+stage+cellLine+drug+replicate ~ conc, value.var="normViability",
@@ -330,6 +321,7 @@ shinyServer(function(input, output, session) {
   
 
   output$drugResponse_plots <- renderPlot({
+    
     validate(need(length(input$selected_drugs) != 0, paste0(" Please select drug/s (max upto 4)")))  
     validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
     flt_drug_normViab <- get_drug_flt_normViab()
@@ -338,13 +330,19 @@ shinyServer(function(input, output, session) {
                       .fun = tmp_iterator, .parallel = T)
     
     facet_by <- paste(input$facet_by, collapse = ' + ' )
-    facet_by <- formula(paste(facet_by, ' ~ drug'))
-    p <- ggplot(data=doseResp, aes(x=fittedX, y=fittedY*100, group=cellLine))
-    p <- p + geom_line(aes(color=cellLine)) + facet_grid( facet_by) + theme_bw()
+    facet_by <- formula(paste(facet_by, ' ~ ', input$dose_response_plot_splitBy))
+    
+    
+    color_options = c('drug', 'cellLine')
+    color_by <- color_options[!color_options %in% input$dose_response_plot_splitBy]
+    
+    p <- ggplot(data=doseResp, aes_string(x="fittedX", y="fittedY*100", group=color_by))
+    p <- p + geom_line(aes_string(color=color_by)) + facet_grid( facet_by) + theme_bw()
     p <- p + geom_hline(aes(yintercept=50), color='grey50', linetype='dashed')
     p <- p + xlab('micromolar conc') + ylab('cell viability %') 
     p <- p + scale_x_continuous(breaks=seq(from=-10,to=-1,by=1),
                                 labels = lapply(seq(from=-10,to=-1,by=1), function(x) (10^x)*(1e+6)  ))
+    
     p
   })
 
