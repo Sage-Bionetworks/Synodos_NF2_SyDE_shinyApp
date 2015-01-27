@@ -293,7 +293,7 @@ shinyServer(function(input, output, session) {
   output$global_drugViab_heatMap <- renderPlot({
     
     validate(need(length(get_selected_cellLines()) != 0, paste0(" Please select cellLine/s")))  
-    validate(need(length(input$selected_drugs) < 5, paste0(" Please select < 5 drugs")))  
+    validate(need(length(input$selected_drugs) !=0 , paste0(" Please select < 5 drugs")))  
     
     x <- get_drug_flt_normViab()
     drugViab_dosages <- dcast(x, group+experiment+stage+cellLine+drug+replicate ~ conc, value.var="normViability",
