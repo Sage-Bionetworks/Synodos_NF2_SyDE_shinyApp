@@ -49,10 +49,8 @@ kinomeRun2 <- temp_kinomeData_dataProcessing(kinomeRun2, kinomeRun2_iTRAQ_to_cel
 #combine all the kinome runs
 kinomeData <- rbind(kinomeRun1, kinomeRun2)
 
+kinomeData$variability <- as.numeric(kinomeData$variability)
 kinomeData['ratio'] = log2(kinomeData$ratio)
 kinomeData['ratio_max'] =  kinomeData$ratio    + kinomeData$ratio*(kinomeData$variability/100)
 kinomeData['ratio_min'] =  kinomeData$ratio    - kinomeData$ratio*(kinomeData$variability/100)
 kinomeData['uniq_peptides'] = kinomeData['# Unique Peptides']
-
-?renderPlot
-
