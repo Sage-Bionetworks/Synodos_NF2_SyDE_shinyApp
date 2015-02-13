@@ -1,5 +1,8 @@
 library(shiny)
 library(shinyIncubator)
+library(shinyBS)
+
+
 
 shinyUI( navbarPage("Synodos Data Explorer",
                     

@@ -6,7 +6,7 @@
 #
 
 library(shiny)
-library("shinyBS")
+library(shinyBS)
 
 
 shinyServer(function(input, output, session) {
