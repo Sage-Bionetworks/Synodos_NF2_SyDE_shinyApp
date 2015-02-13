@@ -18,13 +18,13 @@ temp_kinomeData_dataProcessing <- function(df, iTRAQ_to_cellLine,runCondition ){
   #create the final data frame
   merge.all <- function(x,y){ merge(x,y) }
   kinomeData <-Reduce(merge.all, list(ratios, ratio_variability, psm_counts))
-  
   condition <- lapply(strsplit(as.character(kinomeData$sample), split='/'),
                       function(x) paste0(iTRAQ_to_cellLine[[x[[1]]]], '/', iTRAQ_to_cellLine[[x[[2]]]]) )
   condition <- paste0(condition, ' ', runCondition)
   kinomeData['condition'] <- condition
   kinomeData
 }
+
 
 
 #process KINOME RUN 1 : FullSerum
@@ -48,4 +48,11 @@ kinomeRun2 <- temp_kinomeData_dataProcessing(kinomeRun2, kinomeRun2_iTRAQ_to_cel
 
 #combine all the kinome runs
 kinomeData <- rbind(kinomeRun1, kinomeRun2)
-kinomeData['log2_ratio'] <- log2(kinomeData$ratio)
+
+kinomeData['ratio'] = log2(kinomeData$ratio)
+kinomeData['ratio_max'] =  kinomeData$ratio    + kinomeData$ratio*(kinomeData$variability/100)
+kinomeData['ratio_min'] =  kinomeData$ratio    - kinomeData$ratio*(kinomeData$variability/100)
+kinomeData['uniq_peptides'] = kinomeData['# Unique Peptides']
+
+?renderPlot
+

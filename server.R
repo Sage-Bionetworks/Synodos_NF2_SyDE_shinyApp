@@ -6,6 +6,7 @@
 #
 
 library(shiny)
+library("shinyBS")
 
 
 shinyServer(function(input, output, session) {
@@ -171,8 +172,67 @@ shinyServer(function(input, output, session) {
   ###############################
   ## Kinome Screen Section
   ###############################
+  
+  get_cleaned_kinomeData <- reactive({
+    filtered_data <- kinomeData[!apply(kinomeData, 1, function(x) {sum(is.na(x)) > 0}),]
+    filtered_data
+  })
+  
+  get_filtered_kinomeData <- reactive({
+    cleaned_data <- get_cleaned_kinomeData()
+    #filter by samples
+    #validate(need(length(input$kinome_selected_samples) == 0, "Please select atleast one sample in 1"))
+    cleaned_data <- filter(cleaned_data, condition %in% input$kinome_selected_samples )        
+    
+    #filter kinase family and Selected genes
+    if( sum(input$kinome_selected_kinaseFamily %in% c('ALL')) != 1 ){
+      cleaned_data <- filter(cleaned_data, Family %in% input$kinome_selected_kinaseFamily | Gene %in% input$kinome_selected_genes)        
+    }
+    cleaned_data
+  })
+  
+  
+  get_missing_kinomeData <- reactive({
+    missing_data <- kinomeData[apply(kinomeData, 1, function(x) {sum(is.na(x)) > 0}),]
+    missing_data
+  })
+  
+  get_userFilter_data <- reactive({
+    x <-  get_filtered_kinomeData()
+    
+    #filter based on % variability
+    min_var <- input$kinome_var_threshold[1]
+    max_var <- input$kinome_var_threshold[2]
+    x <- filter(x, variability >= min_var & variability <= max_var )
+    
+    
+    #filter based on unique peptide count
+    count_threshold <- input$kinome_uniqPeptideCount_threshold
+    x <- filter(x, uniq_peptides >= count_threshold)
+    
+    #filter based on ratio
+    x <- filter(x, abs(ratio) > log2(input$kinome_ratio_excludeRegion))
+    
+    
+    return(x)
+  })
+  
+  
+  
+  get_ordered_kinomeData <- reactive({
+    kinomeData <- get_filtered_kinomeData()
+    #get the mean of ratios per gene across all the samples
+    new_order <- names(sort(tapply(kinomeData$ratio, kinomeData$Gene, mean), decreasing=T))
+    
+    new_order <- data.frame('order'= match(kinomeData$Gene,new_order),'index' = 1:nrow(kinomeData)) %>%
+                  arrange(order) %>%
+                  select(index)
+    kinomeData[new_order$index,]
+  })
+  
+
   output$kinome_barPlot <- renderChart({
-    p <- nPlot(log2_ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
+    p <- nPlot(ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
                type="multiBarChart")
     p$params$width <- 800
     p$params$height <- 500
@@ -180,41 +240,96 @@ shinyServer(function(input, output, session) {
     return(p)
   })
   
-  get_cleaned_kinomeData <- reactive({
-    filtered_data <- kinomeData[!apply(kinomeData, 1, function(x) {sum(is.na(x)) > 0}),]
-    filtered_data
+  #custom height deciding function for kinome barplot 1
+  get_plotHeight <- reactive({
+    if( nrow(get_userFilter_data()) < 40 ) return(400)
+    else nrow(get_userFilter_data()) * 10  
   })
   
-  get_missing_kinomeData <- reactive({
-    missing_data <- finalData[apply(kinomeData, 1, function(x) {sum(is.na(x)) > 0}),]
-    missing_data
-  })
-  
-  get_filtered_kinomeData <- reactive({
-     cleaned_data <- get_cleaned_kinomeData()
-     #filter kinase family
-     if( sum(input$kinome_selected_kinaseFamily %in% c('ALL')) != 1 ){
-       cleaned_data <- filter(cleaned_data, Family %in% input$kinome_selected_kinaseFamily )        
-     }
-     #filter by samples
-     cleaned_data <- filter(cleaned_data, condition %in% input$kinome_selected_samples )        
-     cleaned_data
-   })
-
-  get_ordered_kinomeData <- reactive({
-    kinomeData <- get_filtered_kinomeData()
-    #get the mean of ratios per gene across all the samples
-    new_order <- names(sort(tapply(kinomeData$log2_ratio, kinomeData$Gene, mean), decreasing=T))
+  output$kinome_barPlot_1 <- renderPlot({
     
-    new_order <- data.frame('order'= match(kinomeData$Gene,new_order),'index' = 1:nrow(kinomeData)) %>%
-                   arrange(order) %>%
-                   select(index)
-    kinomeData[new_order$index,]
+    withProgress(message = "computing", 
+                 detail = "This may take a few moments...", {
+                  x <- get_userFilter_data()
+                  new_levels <- unique(x[order(x$ratio),'Gene'])
+                  x$Gene <- factor(x$Gene, levels=new_levels)
+                  p <- ggplot(data=x, aes(y=ratio, x=Gene, fill=condition)) 
+                  p <- p + geom_bar(stat="identity", position="dodge", width=0.5) 
+                  p <- p + geom_errorbar(aes(ymax=ratio_max,ymin=ratio_min), width=0.5, position="dodge", colour="grey60") 
+                  p <- p + coord_flip() + theme_bw() + theme(legend.title=element_blank(), legend.position="top")
+                  p <- p + ylab('ratio(log2)')
+                 })
+  return(p)
+  }, height=function(){get_plotHeight()})
+
+  
+  #ggvis interactive plot
+  #1. Uniq peptide v/s peptide count
+  get_filtered_kinomeData %>%
+    mutate(id=paste(condition,'_',Gene)) %>%
+    ggvis(x = ~uniq_peptides, y = ~count, fill = ~Family, key := ~id, size.hover := 200) %>%
+    layer_points() %>%
+    add_legend(c("fill")) %>%
+    add_tooltip(function(df) df$id) %>%
+    set_options(width=450, height=300) %>% 
+    bind_shiny("kinome_peptide_scatter_plot_1") 
+  
+  #2. Uniq peptide count v/s log2 ratio
+#   get_filtered_kinomeData %>%
+#     ggvis(x = ~uniq_peptides, y = ~ratio, fill = ~Family, key := ~Gene, size.hover := 200) %>%
+#     layer_points() %>%
+#     add_legend(c("fill")) %>%
+#     add_tooltip(function(df) df$Gene) %>%
+#     bind_shiny("kinome_peptide_scatter_plot_2")
+  
+  #3. Histogram of variation
+  output$kinome_var_histogram <- renderPlot({
+    x <- get_filtered_kinomeData()
+    p <- ggplot(data=x, aes(x=variability,fill=condition)) + geom_histogram(binwidth=5)
+    p <- p + theme_bw() + xlab('percent variability') + ylab('') 
+    p <- p + theme(legend.position="none")
+    p <- p + geom_vline(xintercept = input$kinome_var_threshold, linetype='dashed', color="grey30")
+    return(p)
   })
 
-  ##########################
-  # Drug Screening Section
-  ##########################
+  #4. Histogram of uniq peptide variation
+  output$kinome_uniqPeptides_histogram <- renderPlot({
+    x <- get_filtered_kinomeData()
+    p <- ggplot(data=x, aes(x=uniq_peptides, fill=condition)) + geom_histogram(binwidth=1)
+    p <- p + theme_bw() + xlab('# unique peptides') + ylab('')
+    p <- p + theme(legend.position="none")
+    p <- p + geom_vline(xintercept = input$kinome_uniqPeptideCount_threshold, linetype='dashed', color="grey30")
+    return(p)
+  })
+
+  #5. Histogram of ratio variation
+  output$kinome_ratio_histogram <- renderPlot({
+    x <- get_filtered_kinomeData()
+    p <- ggplot(data=x, aes(x=ratio, fill=condition)) + geom_histogram(binwidth=.05)
+    p <- p + theme_bw() + xlab('ratio(log2)') + ylab('')
+    p <- p + theme(legend.position="none")
+    return(p)
+  })
+
+  
+
+
+
+#get_ordered_kinomeData() %>%  
+#   output$down_kinomeBarPlot <- downloadHandler <- (
+#     filename = function(){
+#       paste('synodos_kinomeBarPlot.png')
+#     },
+#     content = function(file){
+#       png(filename) 
+#       
+#     }
+#     )
+
+ 
+###################################################  
+# Drug Screening Section
+###################################################
   
   get_selected_cellLines <- reactive({
     MGH_cellLines <- if('ALL' %in% input$MGH_cellLines) unique(MGH_normViab$cellLine) else input$MGH_cellLines

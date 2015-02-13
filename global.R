@@ -13,8 +13,9 @@ library("ggplot2")
 library("data.table")
 library("doMC")
 library("NMF")
+library("shinyBS")
+library("ggvis")
 registerDoMC(4)
-
 synapseLogin()
 
 
