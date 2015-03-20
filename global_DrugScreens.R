@@ -52,7 +52,6 @@ UCF_normViab$cellLine <- gsub("^ ", "", UCF_normViab$cellLine)
 UCF_normViab$cellLine <- gsub("Nf2 --", "Nf2--", UCF_normViab$cellLine)
 
 
-
 MGH_normViab <- 'syn2773792'
 MGH_normViab <- synGet(MGH_normViab)
 MGH_normViab <- read.delim(MGH_normViab@filePath, check.names=F, sep="\t", header=T)

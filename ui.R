@@ -69,7 +69,6 @@ shinyUI( navbarPage("Synodos Data Explorer",
                     
 # Panel 2: Kinome Screens
        tabPanel("Kinome Screens",
-               
                 bsCollapse(multiple = F, id = "kinome", open="kinome1",
                            bsCollapsePanel("Collapse", id='kinome1',
                                 fluidRow( 
@@ -83,49 +82,44 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                         column(width=3,
                                                h5('2. Select Kinase Family'),
                                                selectInput('kinome_selected_kinaseFamily', NULL, choices = c('ALL',unique(kinomeData$Family)),
-                                                           selected = 'ALL', selectize=T, multiple=T)
+                                                           selected = c('AGC', 'CAMK'), selectize=T, multiple=T)
                                         ),
                                         column(width=3,
                                                h5('3. Select Genes'),
                                                selectInput('kinome_selected_genes', NULL, choices = c(unique(kinomeData$Gene)),
                                                            selectize=T, multiple=T)
                                         )
-                                )
+                                ) #END fluidRow
                            )
                 ),
                 hr(),
                 #showOutput("kinome_barPlot", "nvd3")
                 #downloadButton(outputId = "download_kinomeBarPlot", label="download plot"),
-                
-                fluidRow(column(width=6,
-                                plotOutput("kinome_barPlot_1")
-                                ),
-                         column(width=3,
-                                h4('Filter by:'),
-                                br(),
+                fluidRow(column(width=6, plotOutput("kinome_barPlot")),
+                         column(width=3, h4('Filter by:'), br(),
                                 sliderInput("kinome_var_threshold", "a. % variation", 
-                                            min=0, max=200, value=c(0,200), step=5),
+                                            min=0, max=200,   #adding plus 1 as 1413.2 will be rounded off to 1413 by shiny and causes problem in filtering
+                                            value=c(0,200), step=5),
                                 plotOutput("kinome_var_histogram"),
                                 
                                 hr(),
-                                sliderInput('kinome_ratio_excludeRegion', 'c. Exclude Ratio',
-                                            min=1, max=2, value=c(1), step=0.1),
+                                sliderInput('kinome_ratio_includeRegion', 'c. Include Ratio between:',
+                                            min=1, max=round(max(abs(kinomeData$ratio))), 
+                                            value=c(1,round(max(abs(kinomeData$ratio)))), 
+                                            step=0.1),
                                 #plotOutput("kinome_ratio_histogram"),
                                 
-                                hr(),
-                                br(),
-                                h5('test: experiment plot'),
-                                ggvisOutput('kinome_peptide_scatter_plot_1')
-                                
+                                hr(), br(), br(),
+                                h4('Scatterplot: Ratio v/s Peptide count'),
+                                ggvisOutput('kinomeData_scatterPlot')
                          ),
                          column(width=3,
                                 br(),br(),br(),
-                                sliderInput("kinome_uniqPeptideCount_threshold", "b. Unique Peptide Counts", 
-                                            min=0, max=50, value=1, step=1),
+                                sliderInput("kinome_PeptideCount_threshold", "b. Peptide Counts", 
+                                            min=0, max=max(kinomeData$count), value=c(1,max(kinomeData$count)),
+                                            step=1),
                                 plotOutput("kinome_uniqPeptides_histogram"),
                                 hr()
-                                
-                                
                          )
                 )
        ),
@@ -176,7 +170,7 @@ shinyUI( navbarPage("Synodos Data Explorer",
     #navbar pages option      
      fluid = T,
      responsive = T,
-     collapsable = T,
+     collapsible = T,
      footer = list(img(src="synodos-banner.jpg", height="60", width="120"),
                     helpText('Please report any bugs and/or user experience based feedback at apratap@sagebase.org')
                    )

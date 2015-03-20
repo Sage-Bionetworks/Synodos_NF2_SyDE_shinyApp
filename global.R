@@ -41,6 +41,5 @@ cat("Done \n\n")
 #source("global_testing.R")
 
 
-global_cellLines_metadata_link <- 'https://www.synapse.org/#!Synapse:syn2774452/tables/query/%7B%22limit%22:10,%20%22sql%22:%22SELECT%20*%20FROM%20syn2774452%22,%20%22isConsistent%22:true,%20%22offset%22:0%7D'
-
+global_cellLines_metadata_link <- 'https://www.synapse.org/#!Synapse:syn3275123/tables/query/eyJsaW1pdCI6MjUsICJzcWwiOiJTRUxFQ1QgKiBGUk9NIHN5bjMyNzUxMjMiLCAiaXNDb25zaXN0ZW50Ijp0cnVlLCAib2Zmc2V0IjowfQ=='
 global_drug_metadata_link <- 'https://www.synapse.org/#!Synapse:syn3105963/tables/query/eyJsaW1pdCI6MjUsICJzcWwiOiJTRUxFQ1QgKiBGUk9NIHN5bjMxMDU5NjMiLCAiaXNDb25zaXN0ZW50Ijp0cnVlLCAib2Zmc2V0IjowfQ=='

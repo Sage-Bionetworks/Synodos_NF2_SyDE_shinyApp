@@ -32,7 +32,7 @@ kinomeRun1 <- synGet('syn2679231')
 kinomeRun1 <- read.xls(kinomeRun1@filePath, sheet=2, header=T, check.names=F)
 #keep only selected columns (75% co-isolation)
 kinomeRun1 <- kinomeRun1[,c(1:14)]
-kinomeRun1_iTRAQ_to_cellLine <- list('116'='A3','117'='A4','114'='A17','115'='A19')                                                    
+kinomeRun1_iTRAQ_to_cellLine <- list('116'='Syn2','117'='Syn3','114'='Syn5_1','115'='Syn5_2')                                                    
 kinomeRun1_condition <- 'FullSerum'
 kinomeRun1 <- temp_kinomeData_dataProcessing(kinomeRun1, kinomeRun1_iTRAQ_to_cellLine, kinomeRun1_condition)
 
@@ -42,7 +42,7 @@ kinomeRun2 <- synGet('syn2679230')
 kinomeRun2 <- read.xls(kinomeRun2@filePath, sheet=2, header=T, check.names=F)
 #keep only selected columns (75% co-isolation)
 kinomeRun2 <- kinomeRun2[,c(1:14)]
-kinomeRun2_iTRAQ_to_cellLine <- list('114'='A3','115'='A4','116'='A17','117'='A19')                                                    
+kinomeRun2_iTRAQ_to_cellLine <- list('114'='Syn2','115'='Syn3','116'='Syn5_1','117'='Syn5_2')                                                    
 kinomeRun2_condition <- 'SerumFree'
 kinomeRun2 <- temp_kinomeData_dataProcessing(kinomeRun2, kinomeRun2_iTRAQ_to_cellLine, kinomeRun2_condition)
 
@@ -50,7 +50,8 @@ kinomeRun2 <- temp_kinomeData_dataProcessing(kinomeRun2, kinomeRun2_iTRAQ_to_cel
 kinomeData <- rbind(kinomeRun1, kinomeRun2)
 
 kinomeData$variability <- as.numeric(kinomeData$variability)
-kinomeData['ratio'] = log2(kinomeData$ratio)
-kinomeData['ratio_max'] =  kinomeData$ratio    + kinomeData$ratio*(kinomeData$variability/100)
-kinomeData['ratio_min'] =  kinomeData$ratio    - kinomeData$ratio*(kinomeData$variability/100)
+kinomeData['log2ratio'] = log2(kinomeData$ratio)
+kinomeData['log2ratio_max'] =  kinomeData$log2ratio    + kinomeData$log2ratio*(kinomeData$variability/100)
+kinomeData['log2ratio_min'] =  kinomeData$log2ratio    - kinomeData$log2ratio*(kinomeData$variability/100)
 kinomeData['uniq_peptides'] = kinomeData['# Unique Peptides']
+
