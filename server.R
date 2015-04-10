@@ -9,188 +9,14 @@ library(shiny)
 library(shinyBS)
 
 
-linked_brush <- function(keys, fill = "red") {
-  stopifnot(is.character(fill), length(fill) == 1)
-  
-  rv <- shiny::reactiveValues(under_brush = character(), keys = character())
-  rv$keys <- isolate(keys)
-  
-  input <- function(vis) {
-    handle_brush(vis, fill = fill, on_move = function(items, ...) {
-      rv$under_brush <- items$key__
-    })
-  }
-  
-  set_keys <- function(keys) { rv$keys <- keys }
-  set_brush <- function(ids) { rv$under_brush <- ids }
-  selected_r <- reactive(rv$keys %in% rv$under_brush)
-  fill_r <- reactive(c("black", fill)[selected_r() + 1])
-  
-  list(
-    input = input,
-    selected = create_broker(selected_r),
-    fill = create_broker(fill_r),
-    set_keys = set_keys,
-    set_brush = set_brush
-  )
-}
-
-
 shinyServer(function(input, output, session) {
   
-  selected_pathways <- reactive({
-    #selected grouped pathways
-    selected_grps <- names(grouped_pathways) %in% input$grouped_pathways
-    pathways <- unlist(grouped_pathways[selected_grps])
-    #selected pathways based on entered genes
-    pathways_based_on_selected_genes <- genes_to_pathways$pathway[genes_to_pathways$genes %in% selected_genes()]
-    #now add any individual pathways
-    pathways <- unique(c(pathways, input$pathways, pathways_based_on_selected_genes))
-    pathways
-  })
-  
-  genes_in_pathways <- reactive({
-    #selected grouped pathways
-    selected_grps <- names(grouped_pathways) %in% input$grouped_pathways
-    pathways <- unlist(grouped_pathways[selected_grps])
-    #now add any individual pathways
-    pathways <- unique(c(pathways, input$pathways))
-    #find the genes involved in all the selected pathways
-    selected_genes_based_on_pathways <- genes_to_pathways[genes_to_pathways$pathway %in% pathways,][['genes']]
-    selected_genes_based_on_pathways
-  })  
-  
-  selected_genes <- reactive({
-    input$searchByGenes_button
-    selected_genes <- isolate(input$custom_gene_list)
-    geneList <- unlist(strsplit(selected_genes,split=c('[\\s+,\\n+\\r+)]'),perl=T))
-    #convert everything to upper case
-    geneList <- toupper(geneList)
-    geneList <- geneList[ !geneList == "" ] #remove the blank entries
-    geneList
-  })
-  
-  selected_samples <- reactive({
-    selected_samples <- NULL
-     if(! is.null(input$selected_geo_studies)){
-       publicData_phenotype_flt <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies)
-       selected_samples <- unique(paste0(publicData_phenotype_flt$studyId, "_", publicData_phenotype_flt$sampleId))
-     }
-   selected_samples
-  })
-
-  
-  filtered_pathway_enrichment_matrix <- reactive({
-      validate(
-        need(length(selected_pathways()) > 0, "Please select atleast one choice in option 1,2,3")
-      )
-      #filter based on pathways
-      rows_to_keep <- rownames(pathway_enrichment_scores) %in% selected_pathways()
-      filtered_matrix <- pathway_enrichment_scores[rows_to_keep,] 
-      
-      #filter based on selected studies
-      if(! is.null(selected_samples())){
-        rows_to_keep <- colnames(filtered_matrix) %in%  selected_samples()
-        filtered_matrix <- filtered_matrix[,rows_to_keep]
-      }
-      filtered_matrix
-  })
-  
-  
-  filtered_expression_matrix <- reactive({
-    #filter based on genes
-    genes <- as.character(unique(c(selected_genes(), genes_in_pathways())))
-    validate( need(length(genes) > 0, "Please select atleast one choice in option 1,2,3") )
-    rows_to_keep <- rownames(publicData_expMat) %in% genes
-    filtered_expression_matrix <- publicData_expMat[rows_to_keep,]  
-        
-    #filter based on selected studies
-    if(! is.null(selected_samples())){
-      rows_to_keep <- colnames(filtered_expression_matrix) %in%  selected_samples()
-      filtered_expression_matrix <- filtered_expression_matrix[,rows_to_keep]
-    }
-
-    #filter rows with NA values
-    filtered_expression_matrix <- na.omit(filtered_expression_matrix)
-    
-    #make sure the filtered data only has < 1000 genes
-    validate(  need(nrow(filtered_expression_matrix) < 1000, 
-               paste0("Due to longer compute time Expression clustering will only work upto 1000 
-                       genes \n currently entered ",nrow(filtered_expression_matrix), " genes"))
-               )
-    filtered_expression_matrix  
-  })
-  
-  
-  pubData_filteredAnnotation <- reactive({
-    annotation <- publicData_phenotype[,c('studyId', 'sampleId')]
-    annotation['studyType'] = 'meningioma'
-    annotation$studyType[annotation$studyId %in% get_schwannoma_studies()] = 'schwannoma'
-    
-    #if only one geo study is selected selected 
-    if( length(input$selected_geo_studies) == 1 ){
-      annotation <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies )
-      annotation <- dcast(annotation, sampleId + studyId  ~ variable)
-      cols_to_keep <- c('sampleId', 'studyId', input$pubData_selectedPhenotypes)
-      annotation <- annotation[,cols_to_keep]
-    }  
-    #remove duplicated rows
-    rows_to_keep <- ! duplicated(annotation)
-    annotation <- annotation[rows_to_keep,]
-    row.names(annotation) <- paste0(annotation$studyId, '_', annotation$sampleId)
-    annotation$sampleId <- NULL
-    annotation
-  })
-  
-  get_schwannoma_studies <- reactive({ schwannoma_studies })
-  
-  #heatmap for pubData pathway enrichment 
-  output$pubData_pathway_heatmap <- renderPlot({
-    fontsize_row=10
-    if(nrow(filtered_pathway_enrichment_matrix()) > 100){
-      fontsize_row = 0
-    }
-    scaled_mat = t(scale(t(filtered_pathway_enrichment_matrix())))
-    withProgress(message = "clustering & rendering heatmap, please wait", 
-                 detail = "This may take a few moments...", {
-                            expHeatMap(scaled_mat, pubData_filteredAnnotation(),
-                                       scale=F,
-                                       fontsize_col=0,
-                                       fontsize_row=fontsize_row)
-                })
-  })
-  
-  #heatmap for EXPRESSION pubData 
-  output$pubData_expression_heatmap <- renderPlot({  
-    fontsize_row=10
-    if(nrow(filtered_expression_matrix()) > 100){
-      fontsize_row = 0
-    }
-    scaled_expmat = t(scale(t(filtered_expression_matrix())))
-     withProgress( message = "clustering & rendering heatmap, please wait", 
-                   detail = "This may take a few moments...", {
-                     expHeatMap(scaled_expmat, 
-                                pubData_filteredAnnotation(),
-                                scale = F,
-                                fontsize_col=0,
-                                fontsize_row=fontsize_row)               
-                   })
-  })
- 
-  #update the available phenotypes for a single study
-  observe({
-    phenotypes <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies)
-    choices = unique(as.character(phenotypes[['variable']]))
-    updateSelectInput(session = session,
-                      inputId = "pubData_selectedPhenotypes",
-                      choices = choices)
-  })
 
   ###############################
   ## Kinome Screen Section
   ###############################
   
-  kinome_selected_points <- linked_brush(keys=NULL, "red")
+  #kinome_selected_points <- linked_brush(keys=NULL, "red")
   
   #two part filtering is needed to make sure histograms are plotted using data which is 
   # only filtered by samples and kinases and NOT by user selected thresholds
@@ -239,12 +65,19 @@ shinyServer(function(input, output, session) {
       max_ratio <- input$kinome_ratio_includeRegion[2]
       filtered_data <- filter(filtered_data, abs(log2ratio) >= log2(min_ratio) & abs(log2ratio) <= log2(max_ratio)) 
       
-      #add a id column for tooltip
-      filtered_data['id'] <- paste(filtered_data$condition,'_',filtered_data$Gene)
+      #create a id columns for tooltip
+      filtered_data['id'] <- get_tooltip_vals(filtered_data)
       
-      kinome_selected_points$set_keys(seq_len(nrow(filtered_data)))
+      #kinome_selected_points$set_keys(seq_len(nrow(filtered_data)))
       return(filtered_data)
   })
+  
+  get_tooltip_vals <- function(df){
+    selected_cols <- c('Description', 'Gene', 'Uniprot', 'Family',
+                       'ratio', 'variability', 'count', 'uniq_peptides')
+    df <- df[,selected_cols]
+    apply(df,1, function(x) paste0(names(x), ": ", format(x), collapse = "<br />"))
+  }
   
   
   get_ordered_kinomeData <- reactive({
@@ -256,16 +89,7 @@ shinyServer(function(input, output, session) {
                   select(index)
     kinomeData[new_order$index,]
   })
-  
-#   output$kinome_barPlot <- renderChart({
-#     p <- nPlot(ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
-#                type="multiBarChart")
-#     p$params$width <- 800
-#     p$params$height <- 500
-#     p$addParams(dom = 'kinome_barPlot')
-#     return(p)
-#   })
-  
+    
   #custom height deciding function for kinome barplot 1
   get_plotHeight <- reactive({
     x <- get_filtered_kinomeData_by_userSelected_thresholds()
@@ -289,48 +113,16 @@ shinyServer(function(input, output, session) {
   }, height=function(){get_plotHeight()})
 
   
-  #ggvis interactive plot
-  #1. user def scatterPlot
-  
-  #tooltip
-  tooltip_values <- function(x){
-    data <- get_filtered_kinomeData_by_userSelected_thresholds()
-    if(is.null(x)) return(NULL)
-    row <- filter(data, id == x$id)
-    selected_cols <- c('Description', 'Gene', 'Uniprot', 'Family',
-                       'ratio', 'variability', 'count', 'uniq_peptides')
-    row <- row[,selected_cols]
-    paste0(names(row), ": ", format(row), collapse = "<br />")
-  }
-  
-  
-#   kinomeData_scatterPlot <- reactive({
-#     df <- get_filtered_kinomeData_by_userSelected_thresholds()
-#     selected_points <- linked_brush(keys=df$id, "red")
-#     
-#     vis <- df %>%
-#       ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
-#       layer_points() %>%
-#       add_legend(c("fill")) %>%
-#       add_tooltip(tooltip_values, "hover") %>%
-#       set_options(width=450, height=300) %>%
-#       selected_points$input() 
-#     
-#     return(vis)
-#   })
-#   kinomeData_scatterPlot %>% bind_shiny("kinomeData_scatterPlot") 
-
+  #ggvis interactive plot  
   get_filtered_kinomeData_by_userSelected_thresholds %>%
     ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
     layer_points() %>%
     add_legend(c("fill")) %>%
-    add_tooltip(tooltip_values, "hover") %>%
-    set_options(width=450, height=300) %>%
-#     kinome_selected_points$input() %>%
+    add_tooltip(function(df) df$id, "hover") %>%
+    set_options(width=550, height=350) %>%     
     bind_shiny("kinomeData_scatterPlot") 
 
-#    print(kinome_selected_points$input)
-  
+
   #3. Histogram of variation
   output$kinome_var_histogram <- renderPlot({
     x <- get_filtered_kinomeData_by_Samples_N_Kinases()
@@ -360,23 +152,10 @@ shinyServer(function(input, output, session) {
     return(p)
   })
 
-  
-#get_ordered_kinomeData() %>%  
-#   output$down_kinomeBarPlot <- downloadHandler <- (
-#     filename = function(){
-#       paste('synodos_kinomeBarPlot.png')
-#     },
-#     content = function(file){
-#       png(filename) 
-#       
-#     }
-#     )
 
- 
 ###################################################  
 # Drug Screening Section
 ###################################################
-  
   get_selected_cellLines <- reactive({
     MGH_cellLines <- if('ALL' %in% input$MGH_cellLines) unique(MGH_normViab$cellLine) else input$MGH_cellLines
     UCF_cellLines <- if('ALL' %in% input$UCF_cellLines) unique(UCF_normViab$cellLine) else input$UCF_cellLines
@@ -390,7 +169,7 @@ shinyServer(function(input, output, session) {
     validate(need(length(drugs) != 0, "Atleast one drug needs to be selected"))
     drugs
   })
-  
+
   get_drug_flt_normViab <- reactive({
     flt_Drug_normViab <- filter(drug_normViab, drug %in% get_selected_drugs())  
     flt_Drug_normViab <- filter(flt_Drug_normViab, cellLine %in% get_selected_cellLines())  
@@ -413,7 +192,7 @@ shinyServer(function(input, output, session) {
     #keep rows where log10 ICx <= 0
     flt_drug_ICVals <- flt_drug_ICVals[flt_drug_ICVals[ICx] <= 0,]
     
-   
+  
     drug_levels <- flt_drug_ICVals %>%
                       group_by(drug) %>%
                       summarise(med=median(IC50, na.rm=T)) %>%
@@ -430,6 +209,7 @@ shinyServer(function(input, output, session) {
     p + theme(axis.text.x=element_text(angle=90, hjust=1)) + xlab('Drug') + ylab(paste0(ICx, ' (log10 molar conc)'))
   })
   
+
   output$drug_efficacy <- renderPlot({
     flt_drug_ICVals <- get_drug_flt_ICVals()
     
@@ -481,7 +261,6 @@ shinyServer(function(input, output, session) {
              
   })
   
-
   output$drugResponse_plots <- renderPlot({
     
     validate(need(length(input$selected_drugs) != 0, paste0(" Please select drug/s (max upto 4)")))  
@@ -511,6 +290,163 @@ shinyServer(function(input, output, session) {
 })
 
 
+############################
+#Public Data tab code
+############################
+
+#   selected_pathways <- reactive({
+#     #selected grouped pathways
+#     selected_grps <- names(grouped_pathways) %in% input$grouped_pathways
+#     pathways <- unlist(grouped_pathways[selected_grps])
+#     #selected pathways based on entered genes
+#     pathways_based_on_selected_genes <- genes_to_pathways$pathway[genes_to_pathways$genes %in% selected_genes()]
+#     #now add any individual pathways
+#     pathways <- unique(c(pathways, input$pathways, pathways_based_on_selected_genes))
+#     pathways
+#   })
+#   
+#   genes_in_pathways <- reactive({
+#     #selected grouped pathways
+#     selected_grps <- names(grouped_pathways) %in% input$grouped_pathways
+#     pathways <- unlist(grouped_pathways[selected_grps])
+#     #now add any individual pathways
+#     pathways <- unique(c(pathways, input$pathways))
+#     #find the genes involved in all the selected pathways
+#     selected_genes_based_on_pathways <- genes_to_pathways[genes_to_pathways$pathway %in% pathways,][['genes']]
+#     selected_genes_based_on_pathways
+#   })  
+#   
+#   selected_genes <- reactive({
+#     input$searchByGenes_button
+#     selected_genes <- isolate(input$custom_gene_list)
+#     geneList <- unlist(strsplit(selected_genes,split=c('[\\s+,\\n+\\r+)]'),perl=T))
+#     #convert everything to upper case
+#     geneList <- toupper(geneList)
+#     geneList <- geneList[ !geneList == "" ] #remove the blank entries
+#     geneList
+#   })
+#   
+#   selected_samples <- reactive({
+#     selected_samples <- NULL
+#      if(! is.null(input$selected_geo_studies)){
+#        publicData_phenotype_flt <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies)
+#        selected_samples <- unique(paste0(publicData_phenotype_flt$studyId, "_", publicData_phenotype_flt$sampleId))
+#      }
+#    selected_samples
+#   })
+# 
+#   
+#   filtered_pathway_enrichment_matrix <- reactive({
+#       validate(
+#         need(length(selected_pathways()) > 0, "Please select atleast one choice in option 1,2,3")
+#       )
+#       #filter based on pathways
+#       rows_to_keep <- rownames(pathway_enrichment_scores) %in% selected_pathways()
+#       filtered_matrix <- pathway_enrichment_scores[rows_to_keep,] 
+#       
+#       #filter based on selected studies
+#       if(! is.null(selected_samples())){
+#         rows_to_keep <- colnames(filtered_matrix) %in%  selected_samples()
+#         filtered_matrix <- filtered_matrix[,rows_to_keep]
+#       }
+#       filtered_matrix
+#   })
+#   
+#   
+#   filtered_expression_matrix <- reactive({
+#     #filter based on genes
+#     genes <- as.character(unique(c(selected_genes(), genes_in_pathways())))
+#     validate( need(length(genes) > 0, "Please select atleast one choice in option 1,2,3") )
+#     rows_to_keep <- rownames(publicData_expMat) %in% genes
+#     filtered_expression_matrix <- publicData_expMat[rows_to_keep,]  
+#         
+#     #filter based on selected studies
+#     if(! is.null(selected_samples())){
+#       rows_to_keep <- colnames(filtered_expression_matrix) %in%  selected_samples()
+#       filtered_expression_matrix <- filtered_expression_matrix[,rows_to_keep]
+#     }
+# 
+#     #filter rows with NA values
+#     filtered_expression_matrix <- na.omit(filtered_expression_matrix)
+#     
+#     #make sure the filtered data only has < 1000 genes
+#     validate(  need(nrow(filtered_expression_matrix) < 1000, 
+#                paste0("Due to longer compute time Expression clustering will only work upto 1000 
+#                        genes \n currently entered ",nrow(filtered_expression_matrix), " genes"))
+#                )
+#     filtered_expression_matrix  
+#   })
+#   
+#   
+#   pubData_filteredAnnotation <- reactive({
+#     annotation <- publicData_phenotype[,c('studyId', 'sampleId')]
+#     annotation['studyType'] = 'meningioma'
+#     annotation$studyType[annotation$studyId %in% get_schwannoma_studies()] = 'schwannoma'
+#     
+#     #if only one geo study is selected selected 
+#     if( length(input$selected_geo_studies) == 1 ){
+#       annotation <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies )
+#       annotation <- dcast(annotation, sampleId + studyId  ~ variable)
+#       cols_to_keep <- c('sampleId', 'studyId', input$pubData_selectedPhenotypes)
+#       annotation <- annotation[,cols_to_keep]
+#     }  
+#     #remove duplicated rows
+#     rows_to_keep <- ! duplicated(annotation)
+#     annotation <- annotation[rows_to_keep,]
+#     row.names(annotation) <- paste0(annotation$studyId, '_', annotation$sampleId)
+#     annotation$sampleId <- NULL
+#     annotation
+#   })
+#   
+#   get_schwannoma_studies <- reactive({ schwannoma_studies })
+#   
+#   #heatmap for pubData pathway enrichment 
+#   output$pubData_pathway_heatmap <- renderPlot({
+#     fontsize_row=10
+#     if(nrow(filtered_pathway_enrichment_matrix()) > 100){
+#       fontsize_row = 0
+#     }
+#     scaled_mat = t(scale(t(filtered_pathway_enrichment_matrix())))
+#     withProgress(message = "clustering & rendering heatmap, please wait", 
+#                  detail = "This may take a few moments...", {
+#                             expHeatMap(scaled_mat, pubData_filteredAnnotation(),
+#                                        scale=F,
+#                                        fontsize_col=0,
+#                                        fontsize_row=fontsize_row)
+#                 })
+#   })
+#   
+#   #heatmap for EXPRESSION pubData 
+#   output$pubData_expression_heatmap <- renderPlot({  
+#     fontsize_row=10
+#     if(nrow(filtered_expression_matrix()) > 100){
+#       fontsize_row = 0
+#     }
+#     scaled_expmat = t(scale(t(filtered_expression_matrix())))
+#      withProgress( message = "clustering & rendering heatmap, please wait", 
+#                    detail = "This may take a few moments...", {
+#                      expHeatMap(scaled_expmat, 
+#                                 pubData_filteredAnnotation(),
+#                                 scale = F,
+#                                 fontsize_col=0,
+#                                 fontsize_row=fontsize_row)               
+#                    })
+#   })
+#  
+#   #update the available phenotypes for a single study
+#   observe({
+#     phenotypes <- filter(publicData_phenotype, studyId %in% input$selected_geo_studies)
+#     choices = unique(as.character(phenotypes[['variable']]))
+#     updateSelectInput(session = session,
+#                       inputId = "pubData_selectedPhenotypes",
+#                       choices = choices)
+#   })
+
+#######################################################
+#END public data tab code
+#######################################################
+
+
 
 # ########################
 # ## TEST SECTION
@@ -534,4 +470,90 @@ shinyServer(function(input, output, session) {
 #     p1$addParams(dom = 'myChart')
 #     return(p1)
 #   })
+
+
+
+#   kinomeData_scatterPlot <- reactive({
+#     df <- get_filtered_kinomeData_by_userSelected_thresholds()
+#     selected_points <- linked_brush(keys=df$id, "red")
+#     
+#     vis <- df %>%
+#       ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
+#       layer_points() %>%
+#       add_legend(c("fill")) %>%
+#       add_tooltip(tooltip_values, "hover") %>%
+#       set_options(width=450, height=300) %>%
+#       selected_points$input() 
+#     
+#     return(vis)
+#   })
+#   kinomeData_scatterPlot %>% bind_shiny("kinomeData_scatterPlot") 
+
+
+
+
+# linked_brush <- function(keys, fill = "red") {
+#   stopifnot(is.character(fill), length(fill) == 1)
+#   
+#   rv <- shiny::reactiveValues(under_brush = character(), keys = character())
+#   rv$keys <- isolate(keys)
+#   
+#   input <- function(vis) {
+#     handle_brush(vis, fill = fill, on_move = function(items, ...) {
+#       rv$under_brush <- items$key__
+#     })
+#   }
+#   
+#   set_keys <- function(keys) { rv$keys <- keys }
+#   set_brush <- function(ids) { rv$under_brush <- ids }
+#   selected_r <- reactive(rv$keys %in% rv$under_brush)
+#   fill_r <- reactive(c("black", fill)[selected_r() + 1])
+#   
+#   list(
+#     input = input,
+#     selected = create_broker(selected_r),
+#     fill = create_broker(fill_r),
+#     set_keys = set_keys,
+#     set_brush = set_brush
+#   )
+# }
+
+
+#   output$kinome_barPlot <- renderChart({
+#     p <- nPlot(ratio ~ Uniprot , data=get_ordered_kinomeData(), group="condition", 
+#                type="multiBarChart")
+#     p$params$width <- 800
+#     p$params$height <- 500
+#     p$addParams(dom = 'kinome_barPlot')
+#     return(p)
+#   })
+
+
+
+#get_ordered_kinomeData() %>%  
+#   output$down_kinomeBarPlot <- downloadHandler <- (
+#     filename = function(){
+#       paste('synodos_kinomeBarPlot.png')
+#     },
+#     content = function(file){
+#       png(filename) 
+#       
+#     }
+#     )
+
+
+#1. user def scatterPlot
+#tooltip
+# tooltip_values <- function(x){
+#   data <- get_filtered_kinomeData_by_userSelected_thresholds()
+#   if(is.null(x)) return(NULL)
+#   row <- filter(data, id == x$id)
+#   selected_cols <- c('Description', 'Gene', 'Uniprot', 'Family',
+#                      'ratio', 'variability', 'count', 'uniq_peptides')
+#   row <- row[,selected_cols]
+#   paste0(names(row), ": ", format(row), collapse = "<br />")
+# }
+
+
+
 

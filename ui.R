@@ -9,14 +9,13 @@ shinyUI( navbarPage("Synodos Data Explorer",
       #panel 1
       #DrugScreen Panel
       tabPanel('Drug Screens',
-               bsCollapse(multiple = F, id = "drugScreen", open="drugScreen1",
+               bsCollapse(multiple = F, id = "drugScreen", open="Collapse",
                           bsCollapsePanel("Collapse", id='drugScreen1',
                              fluidRow(
                                 column(width=3, 
                                        h5('1. Select MGH Cell Lines'),
                                        selectInput('MGH_cellLines',NULL, choices = c('ALL', unique(MGH_normViab$cellLine)),
                                                    selectize=T, multiple=T, selected = c('Syn1', 'Syn2', 'Syn10', 'Syn7')),
-                                       br(),
                                        tags$a(href=global_cellLines_metadata_link,target="_blank", "cell line metadata")
                                 ),
                                 column(width=3,
@@ -34,7 +33,8 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                        h5('4. Plot Settings'),
                                        selectInput('facet_by','Facet by', choices =c('group', 'experiment', 'cellLine'),
                                                     selected = c('experiment', 'group'),
-                                                    selectize=T, multiple=T)
+                                                    selectize=T, multiple=T),
+                                       submitButton("Update") 
                                 ) 
                              ) #End FluidRow
                           ) #End BS Collapse Panel
@@ -69,7 +69,7 @@ shinyUI( navbarPage("Synodos Data Explorer",
                     
 # Panel 2: Kinome Screens
        tabPanel("Kinome Screens",
-                bsCollapse(multiple = F, id = "kinome", open="kinome1",
+                bsCollapse(multiple = F, id = "kinome", open="Collapse",
                            bsCollapsePanel("Collapse", id='kinome1',
                                 fluidRow( 
                                         column(width=3, 
@@ -88,10 +88,15 @@ shinyUI( navbarPage("Synodos Data Explorer",
                                                h5('3. Select Genes'),
                                                selectInput('kinome_selected_genes', NULL, choices = c(unique(kinomeData$Gene)),
                                                            selectize=T, multiple=T)
+                                        ),
+                                        column(width=3,
+                                               br(),
+                                               submitButton("Update")
                                         )
                                 ) #END fluidRow
                            )
                 ),
+                
                 hr(),
                 #showOutput("kinome_barPlot", "nvd3")
                 #downloadButton(outputId = "download_kinomeBarPlot", label="download plot"),
@@ -124,48 +129,48 @@ shinyUI( navbarPage("Synodos Data Explorer",
                 )
        ),
 
-      #Tab panel 3
-      tabPanel("Public Data",
-        sidebarPanel(
-                    h4('1. Select Grouped Pathways '),
-                    selectInput('grouped_pathways', NULL, choices = names(grouped_pathways),
-                               selected=c('NF2_related_pathways'), selectize=T, multiple=T),
-                    br(),br(),
-                    h4('2. Select individual pathway/s'),
-                    selectInput('pathways', NULL, choices = rownames(pathway_enrichment_scores), multiple=TRUE, 
-                               width='400px',selectize=T),
-                    br(), br(),
-                    h4('3. Select based on genes'), 
-                    helpText("Accepts HUGO gene names. Gene names may be separated by comma, space,line, comma "),
-                    tags$textarea(id="custom_gene_list",rows=8,style="width:300px"),
-                    actionButton("searchByGenes_button", "Search by Genes"),
-                   
-                    br(),br(), br(),
-                
-                    h4("Filtering options "),
-                    h5('A. By GEO studies'),
-                    selectInput('selected_geo_studies', NULL, choices = unique(publicData_phenotype[['studyId']]),
-                                selectize=T, multiple=T),
-                 
-                   #condition panel to show available phenotypes
-                   conditionalPanel(
-                        condition = 'input["selected_geo_studies"].length == 1',
-                                    br(),
-                                    helpText('Available Study Phenotypes'),
-                                    selectInput('pubData_selectedPhenotypes', NULL, 
-                                                choices = '',
-                                                selectize=T, multiple=T)
-                 )
-               ),
-               mainPanel(
-                 tabsetPanel(id="pubData_pathway_panel", type="tabs",
-                             tabPanel("Expression",
-                                      plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)),
-                             tabPanel("Pathway Enrichment",
-                                      plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL))
-                 )
-               )     
-      ), #END TabPanel("Public Data")
+#       #Tab panel 3
+#       tabPanel("Public Data",
+#         sidebarPanel(
+#                     h4('1. Select Grouped Pathways '),
+#                     selectInput('grouped_pathways', NULL, choices = names(grouped_pathways),
+#                                selected=c('NF2_related_pathways'), selectize=T, multiple=T),
+#                     br(),br(),
+#                     h4('2. Select individual pathway/s'),
+#                     selectInput('pathways', NULL, choices = rownames(pathway_enrichment_scores), multiple=TRUE, 
+#                                width='400px',selectize=T),
+#                     br(), br(),
+#                     h4('3. Select based on genes'), 
+#                     helpText("Accepts HUGO gene names. Gene names may be separated by comma, space,line, comma "),
+#                     tags$textarea(id="custom_gene_list",rows=8,style="width:300px"),
+#                     actionButton("searchByGenes_button", "Search by Genes"),
+#                    
+#                     br(),br(), br(),
+#                 
+#                     h4("Filtering options "),
+#                     h5('A. By GEO studies'),
+#                     selectInput('selected_geo_studies', NULL, choices = unique(publicData_phenotype[['studyId']]),
+#                                 selectize=T, multiple=T),
+#                  
+#                    #condition panel to show available phenotypes
+#                    conditionalPanel(
+#                         condition = 'input["selected_geo_studies"].length == 1',
+#                                     br(),
+#                                     helpText('Available Study Phenotypes'),
+#                                     selectInput('pubData_selectedPhenotypes', NULL, 
+#                                                 choices = '',
+#                                                 selectize=T, multiple=T)
+#                  )
+#                ),
+#                mainPanel(
+#                  tabsetPanel(id="pubData_pathway_panel", type="tabs",
+#                              tabPanel("Expression",
+#                                       plotOutput("pubData_expression_heatmap",height="700px",width="auto",hoverId=NULL)),
+#                              tabPanel("Pathway Enrichment",
+#                                       plotOutput("pubData_pathway_heatmap",height="700px",width="auto",hoverId=NULL))
+#                  )
+#                )     
+#       ), #END TabPanel("Public Data")
                
     #navbar pages option      
      fluid = T,
