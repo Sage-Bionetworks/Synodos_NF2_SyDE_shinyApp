@@ -1,7 +1,10 @@
 #global.R
 options(stringsAsFactors = FALSE)
+library(stringr)
 library(synapseClient)
-library('rCharts')
+library("shiny")
+library("rbokeh")
+library("htmlwidgets")
 library("RCurl")
 library("reshape2")
 library("scales")

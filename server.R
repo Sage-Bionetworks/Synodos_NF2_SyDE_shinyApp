@@ -5,10 +5,6 @@
 # http://shiny.rstudio.com
 #
 
-library(shiny)
-library(shinyBS)
-
-
 shinyServer(function(input, output, session) {
   
 
@@ -23,11 +19,24 @@ shinyServer(function(input, output, session) {
   #filer 1 : 
   get_filtered_kinomeData_by_Samples_N_Kinases <- reactive ({
     filtered_data <- kinomeData
-    #1. filter by samples
-    validate( need( length(input$kinome_selected_samples) != 0, "Please select atleast one sample from option 1"))
-    filtered_data <- filter(filtered_data, condition %in% input$kinome_selected_samples )        
-    
-    #2. filter kinase family  and selected genes
+
+    #1. filter by cellLines
+    validate( need( length(input$kinome_selected_cellLines) != 0, "Please select atleast one cellLine"))
+    filtered_data <- filter(filtered_data, cellLine %in% input$kinome_selected_cellLines )        
+
+    #2. filter by drugs
+    validate( need( length(input$kinome_selected_drugs) != 0, "Please select atleast one drug"))
+    filtered_data <- filter(filtered_data, drug %in% input$kinome_selected_drugs )        
+
+    #3. filter by replicates
+    validate( need( length(input$kinome_selected_replicates) != 0, "Please select atleast one replicate"))
+    filtered_data <- filter(filtered_data, replicate %in% input$kinome_selected_replicates )        
+
+    #4. filter by time 
+    validate( need( length(input$kinome_selected_time) != 0, "Please select atleast one time point"))
+    filtered_data <- filter(filtered_data, time %in% input$kinome_selected_time)        
+
+    #5. filter kinase family  and selected genes
     num_selected_entities <- length(input$kinome_selected_kinaseFamily) + length(input$kinome_selected_genes)
     validate( need( num_selected_entities != 0, "Please select atleast one kinase family and/or gene/s"))
     if( sum(input$kinome_selected_kinaseFamily %in% c('ALL')) != 1 ){
@@ -64,32 +73,9 @@ shinyServer(function(input, output, session) {
       min_ratio <- input$kinome_ratio_includeRegion[1]
       max_ratio <- input$kinome_ratio_includeRegion[2]
       filtered_data <- filter(filtered_data, abs(log2ratio) >= log2(min_ratio) & abs(log2ratio) <= log2(max_ratio)) 
-      
-      #create a id columns for tooltip
-      filtered_data['id'] <- get_tooltip_vals(filtered_data)
-      
-      #kinome_selected_points$set_keys(seq_len(nrow(filtered_data)))
       return(filtered_data)
   })
   
-  get_tooltip_vals <- function(df){
-    selected_cols <- c('Description', 'Gene', 'Uniprot', 'Family',
-                       'ratio', 'variability', 'count', 'uniq_peptides')
-    df <- df[,selected_cols]
-    apply(df,1, function(x) paste0(names(x), ": ", format(x), collapse = "<br />"))
-  }
-  
-  
-  get_ordered_kinomeData <- reactive({
-    kinomeData <- get_filtered_kinomeData_by_userSelected_thresholds()
-    #get the mean of ratios per gene across all the samples
-    new_order <- names(sort(tapply(kinomeData$log2ratio, kinomeData$Gene, mean), decreasing=T))
-    new_order <- data.frame('order'= match(kinomeData$Gene,new_order),'index' = 1:nrow(kinomeData)) %>%
-                  arrange(order) %>%
-                  select(index)
-    kinomeData[new_order$index,]
-  })
-    
   #custom height deciding function for kinome barplot 1
   get_plotHeight <- reactive({
     x <- get_filtered_kinomeData_by_userSelected_thresholds()
@@ -109,18 +95,26 @@ shinyServer(function(input, output, session) {
                   p <- p + coord_flip() + theme_bw() + theme(legend.title=element_blank(), legend.position="top")
                   p <- p + ylab('ratio(log2)')
                  })
-  return(p)
+  return(print(p))  #bug: ggplot plots need to be printed for code to work on latest version of shiny from github
   }, height=function(){get_plotHeight()})
 
   
-  #ggvis interactive plot  
-  get_filtered_kinomeData_by_userSelected_thresholds %>%
-    ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
-    layer_points() %>%
-    add_legend(c("fill")) %>%
-    add_tooltip(function(df) df$id, "hover") %>%
-    set_options(width=550, height=350) %>%     
-    bind_shiny("kinomeData_scatterPlot") 
+  # #ggvis interactive plot  
+  # get_filtered_kinomeData_by_userSelected_thresholds %>%
+  #   ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
+  #   layer_points() %>%
+  #   add_legend(c("fill")) %>%
+  #   add_tooltip(function(df) df$id, "hover") %>%
+  #   set_options(width=550, height=350) %>%     
+  #   bind_shiny("kinomeData_scatterPlot") 
+
+
+  output$kinome_scatterPlot <- renderRbokeh({
+       figure() %>%
+          ly_points(count, log2ratio, data=get_filtered_kinomeData_by_userSelected_thresholds(),
+                    color=condition,
+                    hover = list(cellLine,log2ratio,drug,Gene))
+  })
 
 
   #3. Histogram of variation
@@ -130,7 +124,7 @@ shinyServer(function(input, output, session) {
     p <- p + theme_bw() + xlab('percent variability') + ylab('') 
     p <- p + theme(legend.position="none")
     p <- p + geom_vline(xintercept = input$kinome_var_threshold, linetype='dashed', color="grey30")
-    return(p)
+    return(print(p))
   })
 
   #4. Histogram of peptide count variation
@@ -140,7 +134,7 @@ shinyServer(function(input, output, session) {
     p <- p + theme_bw() + xlab('#peptides counts') + ylab('')
     p <- p + theme(legend.position="none")
     p <- p + geom_vline(xintercept = input$kinome_PeptideCount_threshold, linetype='dashed', color="grey30")
-    return(p)
+    return(print(p))
   })
 
   #5. Histogram of ratio variation
@@ -149,7 +143,7 @@ shinyServer(function(input, output, session) {
     p <- ggplot(data=x, aes(x=log2ratio, fill=condition)) + geom_histogram(binwidth=.05)
     p <- p + theme_bw() + xlab('ratio(log2)') + ylab('')
     p <- p + theme(legend.position="none")
-    return(p)
+    return(print(p))
   })
 
 
@@ -452,6 +446,16 @@ shinyServer(function(input, output, session) {
 # ## TEST SECTION
 # ########################
 # 
+
+# get_tooltip_vals <- function(df){
+#   selected_cols <- c('Description', 'Gene', 'Uniprot', 'Family',
+#                      'ratio', 'variability', 'count', 'uniq_peptides')
+#   df <- df[,selected_cols]
+#   apply(df,1, function(x) paste0(names(x), ": ", format(x), collapse = "<br />"))
+# }
+
+
+
 #   ##test rchart
 #   output$chart1 <- renderChart({
 #     hmap <- rPlot(variable ~ School, color = 'rescale', data = findatamelt, type = 'tile')
