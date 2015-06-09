@@ -1,6 +1,6 @@
 library(shiny)
 
-shinyUI( navbarPage("Synodos Data Explorer",    
+shinyUI( navbarPage("Synodos Data Explorer",  
   #DrugScreen Panel 1
   tabPanel('Drug Screens',
      bsCollapse(multiple = F, id = "drugScreen", open="Collapse",
@@ -105,17 +105,35 @@ shinyUI( navbarPage("Synodos Data Explorer",
   ) # end bsCollapse panel - Filters
  ),  # end bscollapse
   hr(),
- #Kinome Display
-  fluidRow(column(width=6, h5('Protein Ratio(log2) barplot'),
-                  plotOutput("kinome_barPlot")),
-           column(width=6, br(), h5('Scatterplot'), 
-                  rbokehOutput('kinome_scatterPlot'))),
-           
-   fluidRow(column(width=4, offset=6, 
-                   br(),
-                   h5('Kinome Ratio Histogram'),
-                   plotOutput('kinome_ratio_histogram')))
- ), #end kinome tab panel
+ 
+ #display kinome results
+ tabsetPanel(id="kinome", type="tabs",
+   tabPanel("Raw Data Exploration",
+      fluidRow(column(width=6, h5('Protein Ratio(log2) barplot'),
+                      plotOutput("kinome_barPlot")),
+               column(width=6, br(), h5('Scatterplot'), 
+                      rbokehOutput('kinome_scatterPlot'))),
+      fluidRow(column(width=4, offset=6, br(),h5('Kinome Ratio Histogram'),
+                      plotOutput('kinome_ratio_histogram')))
+      ), #END Kinome Raw Data Exploration tab panel
+   tabPanel("Diff Protein Expression",
+      fluidRow(column(width=6,offset=3,h5('Volcano Plot'),br(),
+                      rbokehOutput('kinome_volcanoPlot'), br())),
+      
+      fluidRow(br(), br(),dataTableOutput(outputId="kinome_proteins_pval_table"))
+   )
+ ) #END kinome tabset panel
+), #end kinome tab panel
+
+# Tab panel 3 / Genome Browser
+#   tabPanel("Genome Browser", open = F, 
+#     #tags$head(tags$script(src="iframe_resize.js")), 
+# #    tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
+# #      seamless = NA,frameborder="0", scrolling="no",onload='javascript:resizeIframe(this);')
+#     tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
+#       seamless = NA, height=1500, scrolling = TRUE,
+#       width = 950)
+#),
 
 
 #       #Tab panel 3

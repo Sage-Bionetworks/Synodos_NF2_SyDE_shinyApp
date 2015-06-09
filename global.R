@@ -29,6 +29,16 @@ source_url("https://raw.githubusercontent.com/apratap/apRs/master/expression_hea
 #source("global_publicData.R")
 #cat('Done \n\n')
 
+cat('loading the MSigDB pathway <-> genes map....')
+MSIGDB_syn<-synGet("syn2227979")
+load(MSIGDB_syn@filePath) #available as MSigDB R object
+#pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTOME)
+pathways_list <- c(MSigDB$C2.CP.KEGG)
+global_pathway_gene_map <- ldply(pathways_list, function(x) {  
+                                            data.frame(gene=as.character(x))})
+colnames(global_pathway_gene_map) <- c('pathway', 'gene')
+cat('Done \n\n')
+
 #loading the global kinome screening data
 cat('loading kinome screening data ...')
 source("global_kinomeScreens.R")

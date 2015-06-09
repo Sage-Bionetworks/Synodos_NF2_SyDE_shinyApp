@@ -12,8 +12,6 @@ shinyServer(function(input, output, session) {
   ## Kinome Screen Section
   ###############################
   
-  #kinome_selected_points <- linked_brush(keys=NULL, "red")
-  
   #two part filtering is needed to make sure histograms are plotted using data which is 
   # only filtered by samples and kinases and NOT by user selected thresholds
   #filer 1 : 
@@ -76,6 +74,38 @@ shinyServer(function(input, output, session) {
       return(filtered_data)
   })
   
+  get_filtered_kinome_pvals_data <- reactive({
+    df <- get_filtered_kinomeData_by_Samples_N_Kinases()
+    cellLines = unique(df$cellLine)
+    drugs = unique(df$drug)
+    
+    flt_data <- kinome_proteins_pvals %>% filter( cellLine %in% cellLines &
+                                      drug %in% drugs & 
+                                      pval_adj < .05 )
+    
+    #add pathways for each gene
+    flt_data$pathways <- apply(flt_data, 1, function(x) {
+      pathways <- global_pathway_gene_map %>% filter(gene == x['Gene']) %>%
+        select(pathway)
+      paste(pathways$pathway,collapse=', ')
+    })
+    return(flt_data)
+  })
+  
+  output$kinome_volcanoPlot <- renderRbokeh({
+    data =  get_filtered_kinome_pvals_data()
+    figure() %>%
+      ly_points(med_foldchange, -log10(pval_adj), data=data,
+              hover=list(Gene, drug, count),
+              color=drug, size=6) %>%
+      ly_abline(v=0, color="red", width=4)
+  })
+  
+  output$kinome_proteins_pval_table <- renderDataTable({
+    data <- get_filtered_kinome_pvals_data()
+    data %>% select(Gene, cellLine, drug, pval_adj, med_foldchange, pathways)
+  })
+  
   #custom height deciding function for kinome barplot 1
   get_plotHeight <- reactive({
     x <- get_filtered_kinomeData_by_userSelected_thresholds()
@@ -99,24 +129,14 @@ shinyServer(function(input, output, session) {
   }, height=function(){get_plotHeight()})
 
   
-  # #ggvis interactive plot  
-  # get_filtered_kinomeData_by_userSelected_thresholds %>%
-  #   ggvis(x = ~count, y = ~log2ratio, fill = ~condition, key := ~id, size.hover := 200) %>%
-  #   layer_points() %>%
-  #   add_legend(c("fill")) %>%
-  #   add_tooltip(function(df) df$id, "hover") %>%
-  #   set_options(width=550, height=350) %>%     
-  #   bind_shiny("kinomeData_scatterPlot") 
-
-
   output$kinome_scatterPlot <- renderRbokeh({
        figure() %>%
           ly_points(count, log2ratio, data=get_filtered_kinomeData_by_userSelected_thresholds(),
                     color=condition,
                     hover = list(cellLine,log2ratio,drug,Gene))
   })
-
-
+  
+  
   #3. Histogram of variation
   output$kinome_var_histogram <- renderPlot({
     x <- get_filtered_kinomeData_by_Samples_N_Kinases()
