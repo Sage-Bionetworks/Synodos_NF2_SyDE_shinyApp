@@ -115,13 +115,13 @@ shinyUI( navbarPage("Synodos Data Explorer",
                       rbokehOutput('kinome_scatterPlot'))),
       fluidRow(column(width=4, offset=6, br(),h5('Kinome Ratio Histogram'),
                       plotOutput('kinome_ratio_histogram')))
-      ), #END Kinome Raw Data Exploration tab panel
-   tabPanel("Diff Protein Expression",
-      fluidRow(column(width=6,offset=3,h5('Volcano Plot'),br(),
-                      rbokehOutput('kinome_volcanoPlot'), br())),
-      
-      fluidRow(br(), br(),dataTableOutput(outputId="kinome_proteins_pval_table"))
-   )
+      ) #END Kinome Raw Data Exploration tab panel
+#    tabPanel("Diff Protein Expression",
+#       fluidRow(column(width=6,offset=3,h5('Volcano Plot'),br(),
+#                       rbokehOutput('kinome_volcanoPlot'), br())),
+#       
+#       fluidRow(br(), br(),dataTableOutput(outputId="kinome_proteins_pval_table"))
+#    )
  ) #END kinome tabset panel
 ), #end kinome tab panel
 
