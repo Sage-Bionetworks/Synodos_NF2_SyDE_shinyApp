@@ -54,7 +54,6 @@ shinyUI( navbarPage("Synodos Data Explorer",
   ), #END drug screen UI tab panel
 
 ###############################################                    
-
 # Panel 2: Kinome Screens
  tabPanel("Kinome Screens", open = T,
   bsCollapse(multiple = T, id = "kinome", open="Select Samples",
@@ -122,18 +121,38 @@ shinyUI( navbarPage("Synodos Data Explorer",
 #       
 #       fluidRow(br(), br(),dataTableOutput(outputId="kinome_proteins_pval_table"))
 #    )
- ) #END kinome tabset panel
-), #end kinome tab panel
+    ) #END kinome tabset panel
+  ), #end kinome tab panel
 
-# Tab panel 3 / Genome Browser
-#   tabPanel("Genome Browser", open = F, 
-#     #tags$head(tags$script(src="iframe_resize.js")), 
-# #    tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
-# #      seamless = NA,frameborder="0", scrolling="no",onload='javascript:resizeIframe(this);')
-#     tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
-#       seamless = NA, height=1500, scrolling = TRUE,
-#       width = 950)
-#),
+# Panel 3: NCATS Drug Screens
+tabPanel("NCATS Screen", open = T,
+         bsCollapse(multiple = T, id = "NCATS", open="Select Samples",
+                    bsCollapsePanel("Data Selection", 
+                                    fluidRow( 
+                                      column(width=3, h5('1. Select Cell Line/s'),
+                                             selectInput('ncats_selected_cellLines', NULL, choices=unique(NCATS_drugScreen$Cellline),
+                                                         selected = unique(NCATS_drugScreen$Cellline)[1], selectize=T, multiple=T)), #end column  
+                                      column(width=3,h5('2. Drug/s'),
+                                             selectInput('ncats_selected_drugs', NULL, choices=unique(NCATS_drugScreen$SampleName),
+                                                       selected = unique(NCATS_drugScreen$SampleName)[1], selectize=T, multiple=T)), #end column
+                                      column(width=3,h5('3. Target Class/s'),
+                                             selectInput('ncats_selected_targets', NULL, choices=unique(NCATS_drugScreen$GeneSymbol),
+                                                         selected = unique(NCATS_drugScreen$GeneSymbol)[1], selectize=T, multiple=T)), #end column
+                                      column(width=3,h5('4. AC50 (uM)/s'),
+                                             sliderInput("ncats_AC50_range",label='AC50 (uM) range', min=0, max=round(max(NCATS_drugScreen$AC50uM, na.rm = T)),
+                                                         value = round(max(NCATS_drugScreen$AC50uM, na.rm = T)), step=10)),
+                                      submitButton("Update")
+                                      )# end fluid row
+                    )  #end bascollapse panel
+         ), #end bscollapse
+         plotOutput("NCATS_AC50_plot"),
+         plotOutput("NCATS_MaxResp_plot")
+ ), #END NCATS panel
+ hr(),
+#navbar pages option      
+ fluid = T, responsive = T, collapsible = T
+    ) #END nav bar
+  ) #END ShinyUI
 
 
 #       #Tab panel 3
@@ -178,13 +197,18 @@ shinyUI( navbarPage("Synodos Data Explorer",
 #                  )
 #                )     
 #       ), #END TabPanel("Public Data")
-               
-#navbar pages option      
- fluid = T,
- responsive = T,
- collapsible = T
+
 #  footer = list(img(src="synodos-banner.jpg", height="60", width="120"),
 #                 helpText('Please report any bugs and/or user experience based feedback at apratap@sagebase.org')
 #                )
-  )#END nav bar
-) #END ShinyUI
+
+
+# Tab panel 3 / Genome Browser
+#   tabPanel("Genome Browser", open = F, 
+#     #tags$head(tags$script(src="iframe_resize.js")), 
+# #    tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
+# #      seamless = NA,frameborder="0", scrolling="no",onload='javascript:resizeIframe(this);')
+#     tags$iframe(src="http://ec2-52-7-215-89.compute-1.amazonaws.com/JBrowse-1.11.6/?data=synodos%2Fhuman",
+#       seamless = NA, height=1500, scrolling = TRUE,
+#       width = 950)
+

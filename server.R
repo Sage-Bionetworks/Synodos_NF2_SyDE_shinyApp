@@ -300,8 +300,54 @@ shinyServer(function(input, output, session) {
     
     p
   })
+  
+  ###########################
+  #NCATS Drug Screen
+  ###########################
+  
+  output$test <- renderPlot({
+    plot(1:10)
+  })
+  
+  
+  output$NCATS_AC50_plot <- renderPlot({
+      
+      d1 <- NCATS_drugScreen %>% filter( Cellline %in% input$ncats_selected_cellLines)
+      d2 <- d1 %>% filter(GeneSymbol %in% input$ncats_selected_targets & AC50uM <= input$ncats_AC50_range)
+      d3 <- d1 %>% filter(SampleName %in% input$ncats_selected_drugs)
+      
+      data = rbind(d2,d3)
+      
+      new_levels <- ddply(.data=data, .variables = c('SampleName'), function(x) mean(x$AC50uM, na.rm = T)) %>% arrange(desc(V1)) %>% .$SampleName
+
+      p <- ggplot(data=data, aes(x=factor(SampleName, levels=new_levels), color=Cellline, y=AC50uM)) + geom_point()
+      p <- p +  facet_wrap(~ CellType, ncol=1) + theme_bw() + ggtitle('NCATS - AC50(uM) selected drugs')
+      p + xlab('selected drugs') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    })
+  
+  
+  output$NCATS_MaxResp_plot <- renderPlot({
+    
+    d1 <- NCATS_drugScreen %>% filter( Cellline %in% input$ncats_selected_cellLines)
+    d2 <- d1 %>% filter(GeneSymbol %in% input$ncats_selected_targets & AC50uM <= input$ncats_AC50_range)
+    d3 <- d1 %>% filter(SampleName %in% input$ncats_selected_drugs)
+    
+    data = rbind(d2,d3)
+    
+    new_levels <- ddply(.data=data, .variables = c('SampleName'), function(x) mean(x$MaxResp, na.rm = T)) %>% arrange(desc(V1)) %>% .$SampleName
+    
+    p <- ggplot(data=data, aes(x=factor(SampleName, levels=new_levels), color=Cellline, y=MaxResp)) + geom_point()
+    p <- p +  facet_wrap(~ CellType, ncol=1) + theme_bw() + ggtitle('NCATS - Max Response selected drugs')
+    p + xlab('selected drugs') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  })
+  
+  
+  
 
 })
+
+
+
 
 
 ############################

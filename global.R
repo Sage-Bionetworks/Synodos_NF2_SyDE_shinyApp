@@ -49,6 +49,11 @@ cat('loading global drug Screen data ...')
 source("global_DrugScreens.R")
 cat("Done \n\n")
 
+#loading the global NCATS DrugScreens Data
+cat('loading global NCATS drug Screen data ...')
+source("global_NCATSscreen.R")
+cat("Done \n\n")
+
 
 #source("global_testing.R")
 global_cellLines_metadata_link <- 'https://www.synapse.org/#!Synapse:syn3275123/tables/query/eyJsaW1pdCI6MjUsICJzcWwiOiJTRUxFQ1QgKiBGUk9NIHN5bjMyNzUxMjMiLCAiaXNDb25zaXN0ZW50Ijp0cnVlLCAib2Zmc2V0IjowfQ=='
