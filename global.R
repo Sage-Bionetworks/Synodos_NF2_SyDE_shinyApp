@@ -20,13 +20,18 @@ library("gridExtra")
 registerDoMC(4)
 
 synapseLogin()
-source("testModule.R")
+
+source("memoised_drugScreen.R")
+#source("testModule.R")
 source("drugScreenModule.R")
 
 source("getData.R")
 
 QC_plot_name <- function(data){
-  result <- c("maxResp", "AUC")
+  result <- "maxResp"
+  if(!all(is.na(data$AUC))){
+    result <- c(result, "AUC")
+  }
   if(!all(is.na(data$AC50))){
     result <- c(result, "AC50")
   }
