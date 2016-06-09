@@ -1,5 +1,5 @@
 library("nplr")
-require(memoise)
+#require(memoise)
 
 get_drugResponse_stats <- function(conc,viability,...){
   #res <- memoise(function(conc, viability,...) nplr(conc, viability,...))

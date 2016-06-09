@@ -23,7 +23,7 @@ synapseLogin()
 
 source("memoised_drugScreen.R")
 #source("testModule.R")
-source("drugScreenModule.R")
+#source("drugScreenModule.R")
 
 source("getData.R")
 
@@ -34,9 +34,6 @@ QC_plot_name <- function(data){
   }
   if(!all(is.na(data$AC50))){
     result <- c(result, "AC50")
-  }
-  if(!all(is.na(data$IC50))){
-    result <- c(result, "IC50")
   }
   return(result)
 }

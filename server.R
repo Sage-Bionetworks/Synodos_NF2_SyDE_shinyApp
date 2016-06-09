@@ -1,121 +1,24 @@
-drugScreenModuleUI <- function(id){
-  ns <- NS(id)
-  tagList(
-    myHeader <- dashboardHeader(title="Drug Screen", disable=TRUE),
-    mySidebar <- dashboardSidebar(disable=TRUE),
-    myBody <- dashboardBody(
-      tags$head(tags$style(HTML('
-                            .btn {
-                            float:right;
-                            }'))),
-      fluidRow(
-        box(width=12, status='primary', collapsible=TRUE, 
-            collapsed=FALSE, solidHeader=TRUE,
-            title = tagList(shiny::icon("th-list", lib="glyphicon"),
-                            "Data Selection"),
-            column(width = 5,
-              #textOutput(ns("testTxt")),
-              h4('1. Select Samples'), 
-              selectInput(ns('samples'),NULL, choices = unique(summarizedData$sample),
-                          selectize=T, multiple=T,selected = unique(summarizedData$sample)[1:3])
-            ),
-            column(width = 7,
-              h4('2. Select Drugs'),
-              h5("Select by drug name"),
-              selectInput(ns('selected_drugs'),NULL, choices = unique(summarizedData$drug),
-                          selectize=T, multiple=T, selected = unique(summarizedData$drug)[1:3]),
-              uiOutput(ns("target_class"))
-            ),
-            actionButton(ns("updateButton"), "Update")
-        ),
-        box(width = 12, status = 'warning', collapsible = TRUE,
-            collapsed = TRUE, solidHeader = TRUE,
-            title = tagList(shiny::icon("filter", lib="glyphicon"),
-                            "Filter"),
-            #uiOutput(ns("filters"))
-            column(width=3,
-                   # Max Response filter 
-                   sliderInput(ns('maxR_filter'), 'Max Response', 
-                               min=1, max=100, value=c(1, 100), 
-                               step=10, round=TRUE)
-            ),
-            column(width=3,
-                   # IC50 filter
-                   sliderInput(ns('ic50_filter'), 'IC50 (uM)',
-                               min=10, max=100, value=c(1, 10), 
-                               step=5)
-            ),
-            column(width=3,
-                   # AC50 filter
-                   uiOutput(ns("filter1"))
-            ),
-            column(width=3,
-                   # Curve class filter
-                   uiOutput(ns("filter2"))
-            )
-        )
-       ),
-             
-      fluidRow(
-             tabBox(width = 12,
-               tabPanel("Max Response",
-                 plotOutput(ns("drug_max_resp"))
-              ),
-              tabPanel("IC50",
-                 plotOutput(ns("drugScreen_IC50_plot"))
-              ),
-              tabPanel("AC50",
-                 plotOutput(ns("drugScreen_AC50_plot"))
-              ),
-              tabPanel("Dose Response",
-                       helpText("If more than 8 drugs are selected, only the first 8 drugs will be showing."),
-                #checkboxInput(ns("replicate"), "use \"replicate\""),
-                #br(),
-                plotOutput(ns("doseResp_plot"))
-              ),
-              tabPanel("Data",
-                downloadButton(ns("downloadData")),
-                br(),
-                br(),
-                br(),
-                dataTableOutput(ns("drugScreen_dataTable"))
-              ),
-              tabPanel("QC",
-                       h5("Density Histograms Plots"),
-                       plotOutput(ns("QC_plots"),height="500px")
-              )
-             )
-      )
-    )
-  )
-  dashboardPage(header=myHeader, sidebar=mySidebar, body=myBody,
-                skin = "blue")
-} 
-
 drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData = NULL){
-#   output$testTxt <- reactive({
-#     test()
-#   })
   plot_names <- QC_plot_name(summarizedData)
   ns <- NS(id)
   
   output$target_class <- renderUI({
     if(!all(is.na(summarizedData$target))){
-    tagList(
-      h5("Select by target class"),
-      selectInput(ns('selected_class'),NULL, choices = c('ALL', unique(summarizedData$target)),
-                  selectize=T, multiple=T)
-    )
+      tagList(
+        h5("Select by target class"),
+        selectInput(ns('selected_class'),NULL, choices = c('ALL', unique(summarizedData$target)),
+                    selectize=T, multiple=T)
+      )
     }
   })
   
   output$filter1 <- renderUI({
     if(!all(is.na(summarizedData$AC50))){
-    tagList(
-      sliderInput(ns('ac50_filter'), 'AC50', 
-                  min=10, max=100, value=c(1, 1000), 
-                  step=5, round=0)
-    )
+      tagList(
+        sliderInput(ns('ac50_filter'), 'AC50', 
+                    min=10, max=100, value=c(1, 1000), 
+                    step=5, round=0)
+      )
     }
   })
   
@@ -128,7 +31,7 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
       )
     }
   })
- 
+  
   get_selected_samples <- reactive({
     samples <- input$samples
     samples
@@ -144,12 +47,12 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
   })
   
   get_drug_data <- eventReactive(input$updateButton,{
-      validate(need(!is.null(input$samples), "At least one sample needs to be selected" ))
-      validate(need(length(input$samples) <= 5, "You can select up to 5 samples" ))
-      validate(need(!is.null(input$selected_drugs), "At least one sample needs to be selected" ))
-      flt_drug_data <- filter(summarizedData, drug %in% get_selected_drugs())  
-      flt_drug_data <- filter(flt_drug_data, sample %in% get_selected_samples())  
-      return(flt_drug_data)
+    validate(need(!is.null(input$samples), "At least one sample needs to be selected" ))
+    validate(need(length(input$samples) <= 5, "You can select up to 5 samples" ))
+    validate(need(!is.null(input$selected_drugs), "At least one sample needs to be selected" ))
+    flt_drug_data <- filter(summarizedData, drug %in% get_selected_drugs())  
+    flt_drug_data <- filter(flt_drug_data, sample %in% get_selected_samples())  
+    return(flt_drug_data)
   })
   
   # update filter values
@@ -157,35 +60,35 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     drug_data <- get_drug_data()
     
     # max response
-   # if(!all(is.na(summarizedData$maxResp))){
-      mR_min <- floor(min(drug_data$maxResp,na.rm = T))
-      mR_max <- ceiling(max(drug_data$maxResp,na.rm = T))
-      updateSliderInput(session, "maxR_filter", min = mR_min, max = mR_max, value = c(mR_min,mR_max))
-  #  }
+    # if(!all(is.na(summarizedData$maxResp))){
+    mR_min <- floor(min(drug_data$maxResp,na.rm = T))
+    mR_max <- ceiling(max(drug_data$maxResp,na.rm = T))
+    updateSliderInput(session, "maxR_filter", min = mR_min, max = mR_max, value = c(mR_min,mR_max))
+    #  }
     # AC50 slider
-#     if(!all(is.na(summarizedData$AC50))){
-#       ac50_min <- floor(min(drug_data$AC50,na.rm = T))
-#       ac50_max <- ceiling(max(drug_data$AC50,na.rm = T))
-#       updateSliderInput(session, "ac50_filter", max = ac50_max, value = c(ac50_min,ac50_max))
-#     }
+    #     if(!all(is.na(summarizedData$AC50))){
+    #       ac50_min <- floor(min(drug_data$AC50,na.rm = T))
+    #       ac50_max <- ceiling(max(drug_data$AC50,na.rm = T))
+    #       updateSliderInput(session, "ac50_filter", max = ac50_max, value = c(ac50_min,ac50_max))
+    #     }
     # IC50 slider
     #if(!all(is.na(summarizedData$IC50))){
-      ic50 <- drug_data$IC50
-      ic50 <- ic50[!is.na(ic50)]
-      ic50 <- ic50[!is.infinite(ic50)]
-      ic50_min <- floor(min(ic50))
-      ic50_max <- ceiling(max(ic50))
-      updateSliderInput(session, "ic50_filter", min = ic50_min, max = ic50_max, 
-                        value = c(ic50_min, ic50_max), step = floor((ic50_max - ic50_min)/5))
+    ic50 <- drug_data$IC50
+    ic50 <- ic50[!is.na(ic50)]
+    ic50 <- ic50[!is.infinite(ic50)]
+    ic50_min <- floor(min(ic50))
+    ic50_max <- ceiling(max(ic50))
+    updateSliderInput(session, "ic50_filter", min = ic50_min, max = ic50_max, 
+                      value = c(ic50_min, ic50_max), step = floor((ic50_max - ic50_min)/5))
     #}
-#     # curve class
-#      if(!all(is.na(summarizedData$curveClass))){
-#       cc_min <- floor(min(drug_data$curveClass,na.rm = T))
-#       cc_max <- ceiling(max(drug_data$curveClass,na.rm = T))
-#       updateSliderInput(session, "curveClass", min = cc_min, max = cc_max, value = c(cc_min,cc_max))
-#      }
+    #     # curve class
+    #      if(!all(is.na(summarizedData$curveClass))){
+    #       cc_min <- floor(min(drug_data$curveClass,na.rm = T))
+    #       cc_max <- ceiling(max(drug_data$curveClass,na.rm = T))
+    #       updateSliderInput(session, "curveClass", min = cc_min, max = cc_max, value = c(cc_min,cc_max))
+    #      }
   })
-
+  
   get_filtered_drug_data <- reactive({
     drug_data <- get_drug_data()
     filtered_data <- drug_data[drug_data$maxResp >= input$maxR_filter[1] & drug_data$maxResp <= input$maxR_filter[2],]
@@ -194,11 +97,11 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     #}
     #if(!all(is.na(summarizedData$AC50))){
     #  filtered_data <- drug_data[drug_data$AC50 >= input$ac50_filter[1] & drug_data$AC50 <= input$ac50_filter[2],]
-   # }
-   # if(!all(is.na(summarizedData$IC50))){
+    # }
+    # if(!all(is.na(summarizedData$IC50))){
     filtered_data <- filtered_data[filtered_data$IC50 >= input$ic50_filter[1] & filtered_data$IC50 <= input$ic50_filter[2],]
-  #  }
-   # filtered_data <- filtered_data[!is.na(filtered_data$sample),]
+    #  }
+    # filtered_data <- filtered_data[!is.na(filtered_data$sample),]
     filtered_data
   })
   
@@ -283,7 +186,7 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     QC_plot_list()
   })
   
-
+  
   # Dose Response plot    
   output$doseResp_plot <- renderPlot({
     drug_data <- get_filtered_drug_data()
@@ -294,14 +197,14 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     samples <- unique(drug_data$sample)
     normData <- rawData[rawData$sample %in% samples & rawData$drug %in% drugs,]
     var <- c('drug', 'sample')
-#     if(input$replicate){
-#       var <- c(var,"replicate")
-#     }
+    #     if(input$replicate){
+    #       var <- c(var,"replicate")
+    #     }
     doseRespData <- ddply(.data=normData, .variables = var,.fun = tmp_iterator, .parallel = T)
     doseRespData$grp <- doseRespData$sample
-#     if(input$replicate){
-#       doseRespData$grp <- paste(doseRespData$sample,doseRespData$replicate)
-#     }
+    #     if(input$replicate){
+    #       doseRespData$grp <- paste(doseRespData$sample,doseRespData$replicate)
+    #     }
     p <- ggplot(normData, aes(x = log10(conc*(1e+6)), y = normViability*100)) 
     p <- p + geom_point(aes_string(color="sample")) 
     p <- p + scale_color_brewer(type = "qual", palette = 2, direction = 1)
@@ -325,5 +228,6 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
   )
 }
 
-
-
+shinyServer(function(input, output, session) {
+  callModule(drugScreenModule,id = "demo",session = session, summarizedData = summarizedData, rawData = rawData)
+})
