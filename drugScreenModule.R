@@ -1,7 +1,7 @@
 drugScreenModuleUI <- function(id){
   ns <- NS(id)
   tagList(
-    myHeader <- dashboardHeader(title="Drug Screen Demo", disable=TRUE),
+    myHeader <- dashboardHeader(title="Drug Screen", disable=TRUE),
     mySidebar <- dashboardSidebar(disable=TRUE),
     myBody <- dashboardBody(
       tags$head(tags$style(HTML('
@@ -59,13 +59,13 @@ drugScreenModuleUI <- function(id){
       fluidRow(
              tabBox(width = 12,
                tabPanel("Max Response",
-                 plotOutput(ns("drug_max_resp"),height="500px",width="auto",hoverId=NULL)
+                 plotOutput(ns("drug_max_resp"))
               ),
               tabPanel("IC50",
-                 plotOutput(ns("drugScreen_IC50_plot"),height="500px",width="auto",hoverId=NULL)
+                 plotOutput(ns("drugScreen_IC50_plot"))
               ),
               tabPanel("AC50",
-                 plotOutput(ns("drugScreen_AC50_plot"),height="500px",width="auto",hoverId=NULL)
+                 plotOutput(ns("drugScreen_AC50_plot"))
               ),
               tabPanel("Dose Response",
                        helpText("If more than 8 drugs are selected, only the first 8 drugs will be showing."),
@@ -175,7 +175,8 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
       ic50 <- ic50[!is.infinite(ic50)]
       ic50_min <- floor(min(ic50))
       ic50_max <- ceiling(max(ic50))
-      updateSliderInput(session, "ic50_filter", min = ic50_min, max = ic50_max, value = c(ic50_min, ic50_max))
+      updateSliderInput(session, "ic50_filter", min = ic50_min, max = ic50_max, 
+                        value = c(ic50_min, ic50_max), step = floor((ic50_max - ic50_min)/5))
     #}
 #     # curve class
 #      if(!all(is.na(summarizedData$curveClass))){
@@ -195,9 +196,9 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     #  filtered_data <- drug_data[drug_data$AC50 >= input$ac50_filter[1] & drug_data$AC50 <= input$ac50_filter[2],]
    # }
    # if(!all(is.na(summarizedData$IC50))){
-      filtered_data <- drug_data[drug_data$IC50 >= input$ic50_filter[1] & drug_data$IC50 <= input$ic50_filter[2],]
+    filtered_data <- filtered_data[filtered_data$IC50 >= input$ic50_filter[1] & filtered_data$IC50 <= input$ic50_filter[2],]
   #  }
-    filtered_data <- filtered_data[!is.na(filtered_data$sample),]
+   # filtered_data <- filtered_data[!is.na(filtered_data$sample),]
     filtered_data
   })
   
@@ -223,7 +224,7 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     flt_drug_data$drug <- factor(flt_drug_data$drug,levels=drug_levels)
     p <- ggplot(data=flt_drug_data, aes(x=drug, y=maxResp, group=sample)) 
     p <- p + geom_point(aes(color=sample), size=3) + theme_bw(base_size = 15)
-    p <- p + theme(axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('Response')
+    p <- p + theme(text = element_text(size=20), axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('Response')
     p
   })
   
@@ -237,14 +238,13 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     flt_drug_data$IC50 <- log10(as.numeric(flt_drug_data$IC50)) 
     drug_levels <- flt_drug_data %>%
       group_by(drug) %>%
-      summarise(med=median("IC50", na.rm=T)) %>%
+      summarise(med=median(IC50, na.rm=T)) %>%
       arrange(desc(med)) %>% select(drug)
     drug_levels <- drug_levels$drug
     flt_drug_data$drug <- factor(flt_drug_data$drug,levels=drug_levels)
-    flt_drug_data <- flt_drug_data[order(flt_drug_data$IC50,decreasing = T),] 
-    p <- ggplot(data=flt_drug_data, aes_string(x="drug", y="IC50", group="sample")) 
+    p <- ggplot(data=flt_drug_data, aes(x=drug, y=IC50, group=sample)) 
     p <- p + geom_point(aes(color=sample), size=3) + theme_bw(base_size = 15)
-    p + theme(axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('log 10 IC50')
+    p + theme(text = element_text(size=20), axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('log 10 IC50')
   })
   
   # AC50 plot
@@ -264,7 +264,7 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
     flt_drug_data$drug <- factor(flt_drug_data$drug,levels=drug_levels)
     p <- ggplot(data=flt_drug_data, aes_string(x="drug", y="AC50", group="sample")) 
     p <- p + geom_point(aes(color=sample), size=3) + theme_bw(base_size = 15)
-    p + theme(axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('AC50')
+    p + theme(text = element_text(size=20), axis.text.x=element_text(angle=x_angle()[1], hjust=x_angle()[2])) + xlab('Drug') + ylab('AC50')
   })
   
   # QC plots
