@@ -33,3 +33,14 @@ tmp_iterator <- function(df){
     stop('stopped')
   })
 }
+
+QC_plot_name <- function(data){
+  result <- "maxResp"
+  if(!all(is.na(data$AUC))){
+    result <- c(result, "AUC")
+  }
+  if(!all(is.na(data$AC50))){
+    result <- c(result, "AC50")
+  }
+  return(result)
+}
