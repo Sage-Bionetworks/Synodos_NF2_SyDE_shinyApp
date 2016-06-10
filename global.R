@@ -17,12 +17,22 @@ library("data.table")
 library("doMC")
 library("NMF")
 library("gridExtra")
+library("futile.logger")
 registerDoMC(4)
+
+flog.threshold(DEBUG, name='server')
+flog.threshold(DEBUG, name='ui')
+flog.threshold(DEBUG, name='global')
+flog.threshold(INFO, name='synapse')
 
 synapseLogin()
 
-source("functions_drugScreen.R")
-#source("testModule.R")
-#source("drugScreenModule.R")
+flog.debug("Starting App...", name="server")
 
+source("functions_drugScreen.R")
+
+flog.debug("Loading module...", name="server")
+source("drugScreenModule.R")
+
+flog.debug("Loading data...", name="server")
 source("getData.R")
