@@ -11,6 +11,8 @@ library("scales")
 library("gdata")
 library("plyr")
 library("dplyr")
+library("nplr")
+#require(memoise)
 library("devtools")
 library("ggplot2")
 library("data.table")
@@ -28,8 +30,6 @@ flog.threshold(INFO, name='synapse')
 synapseLogin()
 
 flog.debug("Starting App...", name="server")
-
-source("functions_drugScreen.R")
 
 flog.debug("Loading module...", name="server")
 source("drugScreenModule.R")
