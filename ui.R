@@ -1,6 +1,9 @@
 shinyUI(navbarPage("Synodos NF2 Data Explorer",
-                   tabPanel("Drug Screens",
-                            drugScreenModuleUI("demo") 
-                   )
-        )
-)
+	#google analytics
+	header=list(tags$head(includeScript("www/google_analytics.js"))),
+   tabPanel("Drug Screens",
+            drugScreenModuleUI("demo") 
+    ) # END tabPanel
+  )#END navnarPage
+)#END shinyUI
+
