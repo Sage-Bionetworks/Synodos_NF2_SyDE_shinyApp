@@ -21,8 +21,13 @@ select_col <- c("cellLine","drug","IC50","maxEfficacy","trapezoid")
 summarizedData <- summarizedData[,select_col]
 colnames(summarizedData) <- c("sample", "drug", "IC50", "maxResp","AUC")
 
-summarizedData$maxResp <- summarizedData$maxResp*100
+#convert IC50 to uM
 summarizedData$IC50 <- summarizedData$IC50*1e+6
+
+#convert maxResp to 1-100 scale
+summarizedData$maxResp <- summarizedData$maxResp*100
+
+#add missing columns
 summarizedData$AC50 <- NA
 summarizedData$target <- NA
 summarizedData$curveClass <- NA
