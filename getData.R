@@ -1,3 +1,6 @@
+# Synodos Data
+##############
+
 ############
 # Raw Data
 ############
@@ -31,4 +34,20 @@ summarizedData$maxResp <- summarizedData$maxResp*100
 summarizedData$AC50 <- NA
 summarizedData$target <- NA
 summarizedData$curveClass <- NA
+
+########################################
+
+# NCATS data
+############
+
+ncatsData <- synGet("syn5816995")
+ncatsData <- read.xls(ncatsData@filePath)
+names(ncatsData) <- c("protocolName","drugID","sample","sampleType","nf2Status",
+                        "AC50","curveClass","maxResp","logAC50","drug","AUC",
+                        "AUCfit","target")
+
+select_col <- c("sample","AC50","maxResp","curveClass","drugID","drug","target","AUC")
+ncatsData <- ncatsData[,select_col]
+
+ncatsData$IC50 <- NA
 
