@@ -32,7 +32,18 @@ synapseLogin()
 flog.debug("Starting App...", name="server")
 
 flog.debug("Loading module...", name="server")
-source("drugScreenModule.R")
+#source("drugScreenModule.R")
+source_https <- function(url, ...) {
+  # load package
+  require(RCurl)
+ 
+  # parse and evaluate each .R script
+  sapply(c(url, ...), function(u) {
+    eval(parse(text = getURL(u, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))), envir = .GlobalEnv)
+  })
+}
+
+source_https("https://raw.githubusercontent.com/Sage-Bionetworks/shinyModules/master/drugScreen/drugScreenModule.R?token=APzGNGtNcc2N3bFPsW74vTsq-6DFrEilks5XaufuwA%3D%3D")
 
 flog.debug("Loading data...", name="server")
 source("getData.R")
