@@ -43,7 +43,7 @@ source_https <- function(url, ...) {
   })
 }
 
-source_https("https://raw.githubusercontent.com/Sage-Bionetworks/shinyModules/master/drugScreen/drugScreenModule.R?token=APzGNGtNcc2N3bFPsW74vTsq-6DFrEilks5XaufuwA%3D%3D")
+source_https("https://raw.githubusercontent.com/Sage-Bionetworks/shinyModules/master/drugScreen/drugScreenModule.R")
 
 flog.debug("Loading data...", name="server")
 source("getData.R")
