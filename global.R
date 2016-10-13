@@ -6,6 +6,7 @@ library(shinydashboard)
 library(synapseClient)
 library('rCharts')
 library("RCurl")
+library("reshape")
 library("reshape2")
 library("scales")
 library("gdata")
@@ -22,6 +23,7 @@ library("gridExtra")
 library("futile.logger")
 library("spatstat")
 registerDoMC(4)
+library(stringr)
 
 flog.threshold(DEBUG, name='server')
 flog.threshold(DEBUG, name='ui')
@@ -45,6 +47,8 @@ source_https <- function(url, ...) {
 }
 
 source_https("https://raw.githubusercontent.com/Sage-Bionetworks/shinyModules/master/drugScreen/drugScreenModule.R")
+
+source_https("https://raw.githubusercontent.com/Sage-Bionetworks/shinyModules/dev-comb_drug/combinationDrugScreen/combinationDrugScreenModule.R")
 
 flog.debug("Loading data...", name="server")
 source("getData.R")

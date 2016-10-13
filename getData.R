@@ -51,3 +51,6 @@ ncatsData <- ncatsData[,select_col]
 
 ncatsData$IC50 <- NA
 
+#NCATS combination drug screen data
+############
+load("example4.RData")
