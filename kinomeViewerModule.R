@@ -5,7 +5,7 @@ kinomeViewerModuleUI <- function(id){
   mySidebar <- dashboardSidebar(disable=TRUE),
   
   myBody <- dashboardBody(
-    tabsetPanel(
+    tabBox(width = 12,
              tabPanel("Baseline Differential Expression",
                       column(width = 3,style='padding-right:0px;',
                              box(width=NULL, status='primary', collapsible=FALSE, 
@@ -13,7 +13,7 @@ kinomeViewerModuleUI <- function(id){
                                  title = tagList(shiny::icon("check", lib="glyphicon"),
                                                  "Select genes"),
                                  uiOutput(ns("genesbase")))),
-                      column(width = 9,style='padding-left:0px;',
+                      column(width = 8,style='padding-left:30px;',
                              plotOutput(ns("waterfall.hs"), height = 300),
                              plotOutput(ns("waterfall.syn"), height = 300))),
       tabPanel("Treatment Heatmap",
@@ -60,15 +60,13 @@ kinomeViewerModuleUI <- function(id){
                  checkboxInput(ns('cluster_rows'), 'Cluster the rows', value = TRUE)
              )
      ),
-      column(width = 9,style='padding-left:0px;',
-                          plotOutput(ns("heatmap"), height = 650)
+     column(width = 8,style='padding-left:30px;',
+            plotOutput(ns("heatmap"), height = 650)
                           )
-  
              )
-            )    
     )
   )
-  )
+  ))
   dashboardPage(header=myHeader, sidebar=mySidebar, body=myBody,
                 skin = "blue")
 }
@@ -77,8 +75,8 @@ kinomeViewerModule <- function(input,output,session,data,tag){
   dataset <- reactive({
     ds <- data
     flog.debug(sprintf("filtered ds dims: %s", dim(ds)), name="server")
-    rows_to_keep <- apply(exprs(ds), 1, var) > 0.1
-    #rows_to_keep <- order(apply(exprs(ds),1,var),decreasing=T)[1:50]
+    #rows_to_keep <- apply(exprs(ds), 1, var) > 0.1
+    rows_to_keep <- order(apply(exprs(ds),1,var),decreasing=T)
     ds_filtered <- ds[rows_to_keep, ]
     
     ds_filtered
@@ -103,9 +101,6 @@ kinomeViewerModule <- function(input,output,session,data,tag){
   output$genes <- renderUI({
     m_eset <- dataset()
     rows_to_keep <- order(apply(exprs(m_eset),1,var),decreasing=T)
-    if(rows_to_keep > 500){
-      rows_to_keep = rows_to_keep[1:500]
-    }
     m_top500 <- m_eset[rows_to_keep,]
     geneList <- rownames(m_top500)
     geneList <- na.omit(geneList)
@@ -117,12 +112,7 @@ kinomeViewerModule <- function(input,output,session,data,tag){
   
   output$genesbase <- renderUI({
     m_eset <- dataset()
-    rows_to_keep <- order(apply(exprs(m_eset),1,var),decreasing=T)
-    if(rows_to_keep > 500){
-      rows_to_keep = rows_to_keep[1:500]
-    }
-    m_top500 <- m_eset[rows_to_keep,]
-    geneList <- rownames(m_top500)
+    geneList <- rownames(m_eset)
     geneList <- na.omit(geneList)
     tagList(
       tags$textarea(paste0(c(geneList), collapse="\n"), rows=5, id=ns("selected_genes2"), style="width: 100%"),
@@ -167,6 +157,10 @@ kinomeViewerModule <- function(input,output,session,data,tag){
     
     m_eset <- filtered_dataset()
     m <- exprs(m_eset)
+    
+    keep <- rowSums(is.na(m)) < 3
+    m <- m[keep, ] 
+    
     m <- data.matrix(m)
     
     validate( need( ncol(m) != 0, "Filtered matrix contains 0 samples.") )
