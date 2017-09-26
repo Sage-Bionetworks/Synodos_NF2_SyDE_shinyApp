@@ -21,6 +21,8 @@ library("NMF")
 library("gridExtra")
 library("futile.logger")
 library("viridis")
+source("sbHeatmap.R")
+library(Biobase)
 registerDoMC(4)
 
 flog.threshold(DEBUG, name='server')

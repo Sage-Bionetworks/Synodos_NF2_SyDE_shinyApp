@@ -71,12 +71,12 @@ kinomeViewerModuleUI <- function(id){
                 skin = "blue")
 }
 
-kinomeViewerModule <- function(input,output,session,data,tag){
+kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,session,tag){
   dataset <- reactive({
-    ds <- data
+    ds <- kinometx
     flog.debug(sprintf("filtered ds dims: %s", dim(ds)), name="server")
-    #rows_to_keep <- apply(exprs(ds), 1, var) > 0.1
-    rows_to_keep <- order(apply(exprs(ds),1,var),decreasing=T)
+    #rows_to_keep <- apply(Biobase::exprs(ds), 1, var) > 0.1
+    rows_to_keep <- order(apply(Biobase::exprs(ds),1,var),decreasing=T)
     ds_filtered <- ds[rows_to_keep, ]
     
     ds_filtered
@@ -100,7 +100,7 @@ kinomeViewerModule <- function(input,output,session,data,tag){
   
   output$genes <- renderUI({
     m_eset <- dataset()
-    rows_to_keep <- order(apply(exprs(m_eset),1,var),decreasing=T)
+    rows_to_keep <- order(apply(Biobase::exprs(m_eset),1,var),decreasing=T)
     m_top500 <- m_eset[rows_to_keep,]
     geneList <- rownames(m_top500)
     geneList <- na.omit(geneList)
@@ -133,7 +133,7 @@ kinomeViewerModule <- function(input,output,session,data,tag){
   filtered_dataset <- reactive({
     ds <- dataset()
     selected_genes <- user_submitted_selections()
-    validate(need(length(selected_genes) > 4, "Please select at least 5 genes." ))
+    validate(need(length(selected_genes) > 2, "Please select at least 3 genes." ))
     validate(need(length(selected_genes) < 2001, "Number of total selected genes is at most 2000."))
 
     ds <- ds[selected_genes,]
@@ -156,7 +156,7 @@ kinomeViewerModule <- function(input,output,session,data,tag){
     cluster_cols <- input$cluster_cols
     
     m_eset <- filtered_dataset()
-    m <- exprs(m_eset)
+    m <- Biobase::exprs(m_eset)
     
     keep <- rowSums(is.na(m)) < 3
     m <- m[keep, ] 
