@@ -13,10 +13,10 @@ kinomeViewerModuleUI <- function(id){
                                  title = tagList(shiny::icon("check", lib="glyphicon"),
                                                  "Select genes"),
                                  uiOutput(ns("genesbase")))),
-                      column(width = 4.25,style='padding-left:30px;',
+                      column(width = 4,style='padding-left:30px;',
                              plotOutput(ns("waterfall.hs"), height = 600)),
-                      column(width = 0.5),
-                      column(width = 4.25,style='padding-left:30px;',
+                      column(width = 1),
+                      column(width = 4,style='padding-left:30px;',
                              plotOutput(ns("waterfall.syn"), height = 600))),
       tabPanel("Treatment Heatmap",
     tags$head(tags$style(HTML('
