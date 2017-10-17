@@ -1,4 +1,4 @@
-############
+###########
 # Raw Drug Screening Data
 ############
 
@@ -33,11 +33,20 @@ summarizedData$target <- NA
 summarizedData$curveClass <- NA
 
 #################
-# CPM RNASeq Data Matrix
+# CPM RNASeq Data Matrix (Rank Normalized ExpressionSet)
 #################
 
 RNAseq <- "syn10845587"
-RNAseq <- readRDS(synGet(RNAseq)@filePath)
+RNAseq <- synGet(RNAseq)@filePath
+RNAseq <- readRDS(file = RNAseq)
+
+###########
+# Pathway List
+###########
+
+MSIGDB_syn<-synGet("syn2227979")
+load(MSIGDB_syn@filePath) #available as MSigDB R object
+pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTOME)
 
 #################
 # Drug Treated Kinome Ratios Data Matrix

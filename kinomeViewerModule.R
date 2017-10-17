@@ -13,9 +13,11 @@ kinomeViewerModuleUI <- function(id){
                                  title = tagList(shiny::icon("check", lib="glyphicon"),
                                                  "Select genes"),
                                  uiOutput(ns("genesbase")))),
-                      column(width = 8,style='padding-left:30px;',
-                             plotOutput(ns("waterfall.hs"), height = 300),
-                             plotOutput(ns("waterfall.syn"), height = 300))),
+                      column(width = 4.25,style='padding-left:30px;',
+                             plotOutput(ns("waterfall.hs"), height = 600)),
+                      column(width = 0.5),
+                      column(width = 4.25,style='padding-left:30px;',
+                             plotOutput(ns("waterfall.syn"), height = 600))),
       tabPanel("Treatment Heatmap",
     tags$head(tags$style(HTML('
                                 .col-sm-3, {
@@ -112,7 +114,7 @@ kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,s
   
   output$genesbase <- renderUI({
     m_eset <- dataset()
-    geneList <- rownames(m_eset)
+    geneList <- sample(rownames(m_eset), 40)
     geneList <- na.omit(geneList)
     tagList(
       tags$textarea(paste0(c(geneList), collapse="\n"), rows=5, id=ns("selected_genes2"), style="width: 100%"),
@@ -134,7 +136,7 @@ kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,s
     ds <- dataset()
     selected_genes <- user_submitted_selections()
     validate(need(length(selected_genes) > 2, "Please select at least 3 genes." ))
-    validate(need(length(selected_genes) < 2001, "Number of total selected genes is at most 2000."))
+    validate(need(length(selected_genes) < 500, "Pleae select less than 500 kinases."))
 
     ds <- ds[selected_genes,]
 
@@ -187,7 +189,7 @@ kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,s
                                         clustering_method = input$clustering_method,
                                         explicit_rownames = fData(m_eset)$explicit_rownames,
                                         cluster_rows=cluster_rows, cluster_cols=cluster_cols,
-                                        drawColD=FALSE)
+                                        drawColD=T, cellwidth = 9)
     
   })
   
@@ -207,6 +209,7 @@ kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,s
     p<-ggplot(data = hs.filt, aes(x=Gene, 
                                       y=mean.log2ratio, 
                                       fill = mean.log2ratio, group = comp)) +
+      theme_bw()+
       geom_errorbar(aes(x=Gene, ymin=mean.log2ratio-sem, ymax = mean.log2ratio+sem), stat = "identity", position = "dodge") +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_viridis(option="plasma") +
@@ -235,6 +238,7 @@ kinomeViewerModule <- function(input,output,Syn5.Syn1.base,HS01.HS11.base,data,s
     p<-ggplot(data = syn.filt, aes(x=Gene, 
                                       y=mean.log2ratio, 
                                       fill = mean.log2ratio, group = comp)) +
+      theme_bw() +
       geom_errorbar(aes(x=Gene, ymin=mean.log2ratio-sem, ymax = mean.log2ratio+sem),stat = "identity", position = "dodge") +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_viridis(option="plasma") +

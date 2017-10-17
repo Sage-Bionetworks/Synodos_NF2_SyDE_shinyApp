@@ -97,7 +97,7 @@ expressionViewerModule <- function(input,output,session,data,pathways_list,tag){
     m_eset <- dataset()
     rows_to_keep <- order(apply(exprs(m_eset),1,var),decreasing=T)
     if(rows_to_keep > 500){
-      rows_to_keep = rows_to_keep[1:500]
+      rows_to_keep = rows_to_keep[1:50]
     }
     m_top500 <- m_eset[rows_to_keep,]
     geneList <- rownames(m_top500)
@@ -191,7 +191,7 @@ expressionViewerModule <- function(input,output,session,data,pathways_list,tag){
                                         clustering_method = input$clustering_method,
                                         explicit_rownames = fData(m_eset)$explicit_rownames,
                                         cluster_rows=cluster_rows, cluster_cols=cluster_cols,
-                                        drawColD=FALSE)
+                                        drawColD=T, cellwidth = 9)
     
   })
   

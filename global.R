@@ -34,10 +34,11 @@ synapseLogin()
 
 flog.debug("Starting App...", name="server")
 
+flog.debug("Loading data...", name="server")
+source("getData.R")
+
 flog.debug("Loading module...", name="server")
 source("drugScreenModule.R")
 source("expressionViewerModule.R")
 source("kinomeViewerModule.R")
 
-flog.debug("Loading data...", name="server")
-source("getData.R")
