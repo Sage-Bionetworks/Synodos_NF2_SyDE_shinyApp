@@ -2,9 +2,13 @@
 # Raw Drug Screening Data
 ############
 
-rawData <- "syn6138251"
-rawData <- synGet(rawData)
-rawData <- read.delim(rawData@filePath, check.names=F, sep="\t", header=T)
+# remove synapse dependency
+# rawData <- "syn6138251"
+# rawData <- synGet(rawData)
+# rawData <- read.delim(rawData$path, check.names=F, sep="\t", header=T)
+# write.table(rawData, "data/rawData.tsv", sep="\t", row.names = F)
+
+rawData <- read.delim("data/rawData.tsv", check.names=F, sep="\t", header=T)
 colnames(rawData)[1] <- "sample"
 select_col <- c("sample", "conc", "drug", "replicate", "normViability")
 rawData <- rawData[,select_col]
@@ -13,10 +17,13 @@ rawData <- rawData[,select_col]
 # Summarized Drug Screening Data
 #################
 
-summarizedData <- "syn6138237"
-summarizedData <- synGet(summarizedData)
-summarizedData <- read.delim(summarizedData@filePath, check.names=F, sep="\t", header=T)
+# remove synapse dependency
+# summarizedData <- "syn6138237"
+# summarizedData <- synGet(summarizedData)
+# summarizedData <- read.delim(summarizedData$path, check.names=F, sep="\t", header=T)
+# write.table(summarizedData, "data/summarizedData.tsv", sep="\t", row.names = F)
 
+summarizedData <- read.delim("data/summarizedData.tsv", check.names=F, sep="\t", header=T)
 select_col <- c("cellLine","drug","IC50","maxEfficacy","trapezoid")
 summarizedData <- summarizedData[,select_col]
 colnames(summarizedData) <- c("sample", "drug", "IC50", "maxResp","AUC")
@@ -36,30 +43,47 @@ summarizedData$curveClass <- NA
 # CPM RNASeq Data Matrix (Rank Normalized ExpressionSet)
 #################
 
-RNAseq <- "syn10845587"
-RNAseq <- synGet(RNAseq)@filePath
-RNAseq <- readRDS(file = RNAseq)
+# remove synapse dependency
+# RNAseq <- "syn10845587"
+# RNAseq <- synGet(RNAseq)$path
+# RNAseq <- readRDS(file = RNAseq)
+# saveRDS(RNAseq, "data/RNAseq.rds")
+
+RNAseq <- readRDS(file = "data/RNAseq.rds")
 
 ###########
 # Pathway List
 ###########
 
-MSIGDB_syn<-synGet("syn2227979")
-load(MSIGDB_syn@filePath) #available as MSigDB R object
+# remove synapse dependency
+# MSIGDB_syn<-synGet("syn2227979")
+# load(MSIGDB_syn$path) #available as MSigDB R object
+# saveRDS(MSigDB, 'data/MSigDB.rds')
+
+MSigDB <- readRDS('data/MSigDB.rds')
 pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTOME)
 
 #################
 # Drug Treated Kinome Ratios Data Matrix
 #################
 
-kinometx <- "syn10845736"
-kinometx <- readRDS(synGet(kinometx)@filePath)
+# remove synapse dependency
+# kinometx <- "syn10845736"
+# kinometx <- readRDS(synGet(kinometx)$path)
+# saveRDS(kinometx, 'data/kinometx.rds')
+
+kinometx <- readRDS('data/kinometx.rds')
 
 #################
 # Drug Treated Kinome Ratios Data Table
 #################
 
-basekin<-read.table(synGet("syn5840701")@filePath, sep = "\t", header = TRUE, comment.char = "") 
+# remove synapse dependency
+# basekin<-read.table(synGet("syn5840701")$path, sep = "\t", header = TRUE, comment.char = "")
+# write.table(basekin, "data/basekin.tsv", sep="\t", row.names = F)
+
+basekin<-read.table("data/basekin.tsv", sep = "\t", header = TRUE, comment.char = "")
+
 
 Syn5.Syn1.base <- basekin %>% filter(cellLine=="Syn5", referenceSample=="Syn1") %>% 
   group_by(Gene) %>% 

@@ -3,7 +3,7 @@ options(stringsAsFactors = FALSE)
 library(shiny)
 library(shinyIncubator)
 library(shinydashboard)
-library(synapseClient)
+# library(synapseClient)
 library('rCharts')
 library("RCurl")
 library("reshape2")
@@ -28,9 +28,6 @@ registerDoMC(4)
 flog.threshold(DEBUG, name='server')
 flog.threshold(DEBUG, name='ui')
 flog.threshold(DEBUG, name='global')
-flog.threshold(INFO, name='synapse')
-
-synapseLogin()
 
 flog.debug("Starting App...", name="server")
 
