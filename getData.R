@@ -59,7 +59,6 @@ kinometx <- readRDS(synGet(kinometx)$path)
 # Drug Treated Kinome Ratios Data Table
 #################
 
-remove synapse dependency
 basekin<-read.table(synGet("syn5840701")$path, sep = "\t", header = TRUE, comment.char = "")
 
 
