@@ -1,4 +1,4 @@
-drugScreenModuleUI <- function(id, data){
+drugScreenModuleUI <- function(id){
   ns <- NS(id)
   tagList(
     myHeader <- dashboardHeader(title="Drug Screen", disable=TRUE),
@@ -19,14 +19,12 @@ drugScreenModuleUI <- function(id, data){
                             "Data Selection"),
             column(width = 5,
                    h4('1. Select Samples'), 
-                   selectInput(ns('samples'),NULL, choices = unique(data$sample),
-                               selectize=T, multiple=T,selected = unique(data$sample)[1:3])
+                   uiOutput(ns('control_1'))
             ),
             column(width = 7,
                    h4('2. Select Drugs'),
                    uiOutput(ns("text")),
-                   selectInput(ns('selected_drugs'),NULL, choices = unique(data$drug),
-                               selectize=T, multiple=T, selected = unique(data$drug)[1:3]),
+                   uiOutput(ns('control_2')),
                    uiOutput(ns("target"))
             ),
             actionButton(ns("updateButton"), "Update")
@@ -78,6 +76,8 @@ drugScreenModuleUI <- function(id, data){
 
 drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData = NULL, tag){
   
+  
+  
   if(is.null(summarizedData)){
     summarizedData <- ddply(.data=rawData, .variables = c('drug', 'sample'),.fun = tmp_iterator, .parallel = T)
     select_col <- c("drug","sample","trapezoid","IC50","maxResp")
@@ -97,6 +97,16 @@ drugScreenModule <- function(input,output,session,summarizedData = NULL, rawData
   }
   
   ns <- NS(tag)
+  
+  output$control_1 <- renderUI({
+    ns <- session$ns
+    selectizeInput(ns("samples"), "Samples", choices = unique(summarizedData$sample), selected = unique(summarizedData$sample)[1:3], multiple = TRUE)
+  })
+  
+  output$control_2 <- renderUI({
+    ns <- session$ns
+    selectInput(ns("selected_drugs"), "Drugs", choices = unique(summarizedData$drug), selected = unique(summarizedData$drug)[1:3] , multiple = TRUE)
+  })
   
   target_class <- !all(is.na(summarizedData$target))
   show_ic50 <- !all(is.na(summarizedData$IC50))

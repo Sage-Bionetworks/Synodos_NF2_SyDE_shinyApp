@@ -4,7 +4,7 @@
 
 rawData <- "syn6138251"
 rawData <- synGet(rawData)
-rawData <- read.delim(rawData@filePath, check.names=F, sep="\t", header=T)
+rawData <- read.delim(rawData$path, check.names=F, sep="\t", header=T)
 colnames(rawData)[1] <- "sample"
 select_col <- c("sample", "conc", "drug", "replicate", "normViability")
 rawData <- rawData[,select_col]
@@ -15,8 +15,7 @@ rawData <- rawData[,select_col]
 
 summarizedData <- "syn6138237"
 summarizedData <- synGet(summarizedData)
-summarizedData <- read.delim(summarizedData@filePath, check.names=F, sep="\t", header=T)
-
+summarizedData <- read.delim(summarizedData$path, check.names=F, sep="\t", header=T)
 select_col <- c("cellLine","drug","IC50","maxEfficacy","trapezoid")
 summarizedData <- summarizedData[,select_col]
 colnames(summarizedData) <- c("sample", "drug", "IC50", "maxResp","AUC")
@@ -37,7 +36,7 @@ summarizedData$curveClass <- NA
 #################
 
 RNAseq <- "syn10845587"
-RNAseq <- synGet(RNAseq)@filePath
+RNAseq <- synGet(RNAseq)$path
 RNAseq <- readRDS(file = RNAseq)
 
 ###########
@@ -45,7 +44,8 @@ RNAseq <- readRDS(file = RNAseq)
 ###########
 
 MSIGDB_syn<-synGet("syn2227979")
-load(MSIGDB_syn@filePath) #available as MSigDB R object
+load(MSIGDB_syn$path) #available as MSigDB R object
+
 pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTOME)
 
 #################
@@ -53,13 +53,15 @@ pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTO
 #################
 
 kinometx <- "syn10845736"
-kinometx <- readRDS(synGet(kinometx)@filePath)
+kinometx <- readRDS(synGet(kinometx)$path)
 
 #################
 # Drug Treated Kinome Ratios Data Table
 #################
 
-basekin<-read.table(synGet("syn5840701")@filePath, sep = "\t", header = TRUE, comment.char = "") 
+remove synapse dependency
+basekin<-read.table(synGet("syn5840701")$path, sep = "\t", header = TRUE, comment.char = "")
+
 
 Syn5.Syn1.base <- basekin %>% filter(cellLine=="Syn5", referenceSample=="Syn1") %>% 
   group_by(Gene) %>% 
