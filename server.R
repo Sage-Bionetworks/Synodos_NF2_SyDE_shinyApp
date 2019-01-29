@@ -3,7 +3,7 @@ shinyServer(function(input, output, session) {
   foo <- observeEvent(input$cookie, {
     
     synLogin(sessionToken=input$cookie)
-
+    message("sprintf("Welcome, %s", synGetUserProfile()$userName)")
     source("getData.R")
 
     callModule(drugScreenModule,id = "demo",session = session, summarizedData = summarizedData, rawData = rawData,tag="demo")
