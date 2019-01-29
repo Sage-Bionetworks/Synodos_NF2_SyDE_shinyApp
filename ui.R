@@ -1,5 +1,9 @@
 shinyUI(navbarPage("Synodos NF2 Data Explorer",
-	header=list(tags$head(includeScript("www/readCookie.js"))),
+                   tags$head(
+                     singleton(
+                       includeScript("www/readCookie.js")
+                     )
+                   ),
    tabPanel("Drug Screens",
              drugScreenModuleUI(id = "demo") 
    ),
