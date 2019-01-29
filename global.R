@@ -3,9 +3,6 @@ options(stringsAsFactors = FALSE)
 library(shiny)
 library(synapser)
 
-# For testing against staging
-PythonEmbedInR::pyExec("syn.setEndpoints(**synapseclient.client.STAGING_ENDPOINTS)")
-
 library(shinyIncubator)
 library(shinydashboard)
 # library(synapseClient)
