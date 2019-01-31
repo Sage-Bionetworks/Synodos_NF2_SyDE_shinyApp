@@ -1,9 +1,8 @@
 shinyUI(navbarPage("Synodos NF2 Data Explorer",
-	#google analytics
-	header=list(tags$head(includeScript("www/google_analytics.js"))),
+                   header=list(tags$head(includeScript("www/readCookie.js"))),
    tabPanel("Drug Screens",
-            drugScreenModuleUI(id = "demo", data = summarizedData) 
-    ),
+             drugScreenModuleUI(id = "demo") 
+   ),
 	 tabPanel("Gene Expression",
 	          expressionViewerModuleUI(id = "RNA")
 	          ),
