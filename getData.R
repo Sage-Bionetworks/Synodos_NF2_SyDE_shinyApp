@@ -43,7 +43,7 @@ RNAseq <- readRDS(file = RNAseq)
 # Pathway List
 ###########
 
-MSIGDB_syn<-synGet("syn2227979")
+MSIGDB_syn<-synGet("syn18896790")
 load(MSIGDB_syn$path) #available as MSigDB R object
 
 pathways_list <- c(MSigDB$C2.CP.BIOCARTA, MSigDB$C2.CP.KEGG, MSigDB$C2.CP.REACTOME)
@@ -59,7 +59,7 @@ kinometx <- readRDS(synGet(kinometx)$path)
 # Drug Treated Kinome Ratios Data Table
 #################
 
-basekin<-read.table(synGet("syn5840701")$path, sep = "\t", header = TRUE, comment.char = "")
+basekin<-read.table(synGet("syn6182638")$path, sep = "\t", header = TRUE, comment.char = "")
 
 
 Syn5.Syn1.base <- basekin %>% filter(cellLine=="Syn5", referenceSample=="Syn1") %>% 
